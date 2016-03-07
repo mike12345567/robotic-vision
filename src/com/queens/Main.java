@@ -5,11 +5,17 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowStateListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Main {
+    static private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
     static private JFrame window;
     static private ImageIcon image;
     static private JLabel label;
@@ -17,8 +23,10 @@ public class Main {
     static private Colour red = new Colour(ColourNames.Red);
     static private Colour blue = new Colour(ColourNames.Blue);
     static private Colour green = new Colour(ColourNames.Green);
-    static private final float thresholdRadiusSize = 20f;
+    static private Colour yellow = new Colour(ColourNames.Yellow);
+    static private final int thresholdSize = 20;
     static private final int kSizeBlur = 7;
+    static private ObjectPairing pairing = new ObjectPairing();
 
     public static void main(String[] args) {
 	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -33,17 +41,32 @@ public class Main {
     }
 
     public static void loop() {
-        while (true) {
+        do {
+            for (ColouredArea area : areas) {
+                area.resetUpdated();
+            }
             Mat image = new Mat();
             capture.read(image);
             Mat matG = mask(image, green);
             Mat matR = mask(image, red);
             Mat matB = mask(image, blue);
-            findContours(image, matG, green.rgbColour);
-            findContours(image, matR, red.rgbColour);
-            findContours(image, matB, blue.rgbColour);
+            Mat matY = mask(image, yellow);
+            findContours(image, matG, green);
+            findContours(image, matR, red);
+            findContours(image, matB, blue);
+            findContours(image, matY, yellow);
+            ArrayList<ColouredArea> toRemove = new ArrayList<ColouredArea>();
+            for (int i = 0; i < areas.size(); i++) {
+                if (!areas.get(i).hasBeenUpdated()) {
+                    pairing.beingRemoved(areas.get(i));
+                    toRemove.add(areas.get(i));
+                }
+            }
+            areas.removeAll(toRemove);
+//            System.out.printf("THERE ARE CURRENTLY %d COLOURED OBJECTS.\n", areas.size());
+            System.out.printf("ROTATION IS : %f\n", pairing.getRotation());
             show(image);
-        }
+        } while (capture.isOpened());
     }
 
     public static Mat mask(Mat image, Colour colour) {
@@ -66,7 +89,7 @@ public class Main {
             }
         }
 
-        Size size = new Size(3, 3);
+        Size size = new Size(7, 7);
         Mat str_el = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size);
         Imgproc.morphologyEx(output, output, Imgproc.MORPH_OPEN, str_el);
         Imgproc.morphologyEx(output, output, Imgproc.MORPH_CLOSE, str_el);
@@ -81,54 +104,60 @@ public class Main {
         window.getContentPane().add(label);
         window.setResizable(false);
         window.setTitle("title");
-        setCloseOption(0);
+        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        window.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                capture.release();
+            }
+        });
     }
 
-    public static void setCloseOption(int option) {
-        switch (option) {
-            case 0:
-                window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                break;
-            case 1:
-                window.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
-                break;
-            default:
-                window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        }
-    }
-
-    public static void findContours(Mat output, Mat src, Scalar colour) {
+    public static void findContours(Mat output, Mat src, Colour colour) {
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
-        ArrayList<Point> center = new ArrayList<Point>();
-        ArrayList<Integer> radius = new ArrayList<Integer>();
 
         Imgproc.findContours(src.clone(), contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
 
         int count = contours.size();
 
         for (int i = 0; i < count; i++) {
-            Point c = new Point();
-            float[] r = new float[1];
-            Imgproc.minEnclosingCircle(convert(contours.get(i)), c, r);
-
-            if (r[0] > thresholdRadiusSize) {
-                center.add(c);
-                radius.add((int) r[0]);
+            MatOfPoint2f point2f = new MatOfPoint2f();
+            Imgproc.approxPolyDP(convertTo2f(contours.get(i)), point2f, 3, true);
+            Rect rect = Imgproc.boundingRect(convertToP(point2f));
+            if (rect.size().width > thresholdSize && rect.size().height > thresholdSize) {
+                boolean found = false;
+                for (ColouredArea area : areas) {
+                    if (area.withinArea(rect)) {
+                        found = true;
+                        area.updatePosition(rect);
+                        break;
+                    }
+                }
+                if (!found) {
+                    ColouredArea area = new ColouredArea(rect, colour.getName());
+                    areas.add(area);
+                    if (colour.getName() == ColourNames.Blue) {
+                        pairing.addBackArea(area);
+                    } else if (colour.getName() == ColourNames.Red) {
+                       pairing.addFrontArea(area);
+                    }
+                }
+                Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
             }
-        }
-
-        count = center.size();
-
-        for (int i = 0; i < count; i++) {
-            Imgproc.circle(output, center.get(i), radius.get(i), colour, 3);
         }
     }
 
-    public static MatOfPoint2f convert(MatOfPoint point) {
+    public static MatOfPoint2f convertTo2f(MatOfPoint point) {
         MatOfPoint2f point2f = new MatOfPoint2f();
         point2f.fromList(point.toList());
         return point2f;
+    }
+
+    public static MatOfPoint convertToP(MatOfPoint2f point2f) {
+        MatOfPoint point = new MatOfPoint();
+        point.fromList(point2f.toList());
+        return point;
     }
 
     public static void show(Mat img) {
