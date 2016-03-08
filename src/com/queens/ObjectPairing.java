@@ -1,18 +1,21 @@
 package com.queens;
 
+import org.opencv.core.Point;
+
+import java.util.ArrayList;
+
 public class ObjectPairing {
+    static private final int nearThreshold = 5;
+
+    ColourNames colourOne;  // back area is border colourOne, internal colourTwo
     ColouredArea backArea = null;
+    ColourNames colourTwo;  // front area is border colourTwo, internal colourOne
     ColouredArea frontArea = null;
-    boolean ready;
+    boolean ready = false;
 
-    public ObjectPairing() {
-        ready = false;
-    }
-
-    public ObjectPairing(ColouredArea backArea, ColouredArea frontArea) {
-        this.backArea = backArea;
-        this.frontArea = frontArea;
-        ready = true;
+    public ObjectPairing(ColourNames colourOne, ColourNames colourTwo) {
+        this.colourOne = colourOne;
+        this.colourTwo = colourTwo;
     }
 
     public float getRotation() {
@@ -25,7 +28,7 @@ public class ObjectPairing {
                 y = y / length;
             }
 
-             double degrees = 90.0d - Math.toDegrees( Math.atan2( y, x ) );
+            double degrees = 90.0d - Math.toDegrees( Math.atan2( y, x ) );
 
             if( degrees < 0.0d )
             {
@@ -37,28 +40,54 @@ public class ObjectPairing {
         }
     }
 
-    public void addBackArea(ColouredArea area) {
-        this.backArea = area;
-        if (this.frontArea != null) {
+    public void checkForPairing(ArrayList<ColouredArea> currentAreas) {
+        if (!currentAreas.contains(backArea)) {
+            backArea = null;
+        }
+        if (!currentAreas.contains(frontArea)) {
+            frontArea = null;
+        }
+
+        for (ColouredArea area : currentAreas) {
+
+            if (!area.isRoughSquare()) {
+                continue;
+            }
+
+            if (area.getColour() == this.colourOne && containsOther(currentAreas, area)) {
+                this.frontArea = area;
+            }
+            if (area.getColour() == this.colourTwo && containsOther(currentAreas, area)) {
+                this.backArea = area;
+            }
+        }
+
+        if (this.frontArea != null && this.backArea != null) {
             ready = true;
+        } else {
+            ready = false;
         }
     }
 
-    public void addFrontArea(ColouredArea area) {
-        this.frontArea = area;
-        if (this.backArea != null) {
-            ready = true;
+    private boolean containsOther(ArrayList<ColouredArea> currentAreas, ColouredArea toTest) {
+        ColourNames lookingFor = toTest.getColour() == colourOne ? colourTwo : colourOne;
+        for (ColouredArea area : currentAreas) {
+            if (area == toTest || (pointsClose(area.getTopCorner(), toTest.getTopCorner()) &&
+                pointsClose(area.getBottomCorner(), toTest.getBottomCorner()))) {
+                continue;
+            }
+
+            if (area.getColour() == lookingFor &&
+                toTest.getBoundingBox().contains(area.getTopCorner()) &&
+                toTest.getBoundingBox().contains(area.getBottomCorner())) {
+                return true;
+            }
         }
+        return false;
     }
 
-    public void beingRemoved(ColouredArea area) {
-        if (this.frontArea != null && this.frontArea == area) {
-            this.frontArea = null;
-            ready = false;
-        }
-        if (this.backArea != null && this.backArea == area) {
-            this.backArea = null;
-            ready = false;
-        }
+    private boolean pointsClose(Point one, Point two) {
+        return (one.x - nearThreshold > two.x && one.x + nearThreshold < two.x &&
+                one.y - nearThreshold > two.y && one.y + nearThreshold < two.y);
     }
 }

@@ -3,6 +3,9 @@ package com.queens;
 public enum ColourNames {
     Red,
     Green,
+    SpecificGreen,
     Blue,
-    Yellow
+    SpecificBlue,
+    Yellow,
+    SpecificYellow,
 }

@@ -20,22 +20,37 @@ public class Colour {
                 hsvThresholdMin.add(new Scalar(160, 50, 50));   // red
                 hsvThresholdMax.add(new Scalar(179, 255, 255)); // red
                 hsvThresholdMin.add(new Scalar(0, 50, 50));     // orange
-                hsvThresholdMax.add(new Scalar(22, 255, 255));  // orange
+                hsvThresholdMax.add(new Scalar(16, 255, 255));  // orange
                 break;
             case Blue:
                 rgbColour = new Scalar(255, 0, 0);
                 hsvThresholdMin.add(new Scalar(75, 50, 50));    // blue and violet
                 hsvThresholdMax.add(new Scalar(160, 255, 255)); // blue and violet
                 break;
+            case SpecificBlue:
+                rgbColour = new Scalar(255, 0, 0);
+                hsvThresholdMin.add(new Scalar(100, 50, 50));
+                hsvThresholdMax.add(new Scalar(105, 255, 255));
+                break;
             case Green:
                 rgbColour = new Scalar(0, 255, 0);
                 hsvThresholdMin.add(new Scalar(39, 30, 30));    // green
                 hsvThresholdMax.add(new Scalar(75, 255, 255));  // green
                 break;
+            case SpecificGreen:
+                rgbColour = new Scalar(0, 255, 0);
+                hsvThresholdMin.add(new Scalar(60, 60, 60));
+                hsvThresholdMax.add(new Scalar(75, 255, 255));
+                break;
             case Yellow:
                 rgbColour = new Scalar(0, 255, 255);
-                hsvThresholdMin.add(new Scalar(23, 60, 60));    // yellow
+                hsvThresholdMin.add(new Scalar(17, 60, 60));    // yellow
                 hsvThresholdMax.add(new Scalar(38, 255, 255));  // yellow
+                break;
+            case SpecificYellow:
+                rgbColour = new Scalar(0, 255, 255);
+                hsvThresholdMin.add(new Scalar(17, 60, 60));
+                hsvThresholdMax.add(new Scalar(30, 255, 255));
                 break;
         }
     }

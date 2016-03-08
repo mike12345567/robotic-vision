@@ -5,6 +5,7 @@ import org.opencv.core.Rect;
 
 public class ColouredArea {
     private static final int threshold = 30;
+    private static final float percentageThreshold = 0.4f;
     private Rect boundingBox = null;
     private ColourNames colour;
     private boolean needsUpdated = false;
@@ -12,6 +13,26 @@ public class ColouredArea {
     public ColouredArea(Rect boundingBox, ColourNames colour) {
         this.colour = colour;
         this.boundingBox = boundingBox;
+    }
+
+    public Point getTopCorner() {
+        return boundingBox.tl();
+    }
+
+    public Point getBottomCorner() {
+        return boundingBox.br();
+    }
+
+    public Rect getBoundingBox() {
+        return boundingBox;
+    }
+
+    public int getPureX() {
+        return boundingBox.x;
+    }
+
+    public int getPureY() {
+        return boundingBox.y;
     }
 
     public int getX() {
@@ -34,6 +55,16 @@ public class ColouredArea {
 
     public ColourNames getColour() {
         return colour;
+    }
+
+    public int getSize() {
+        return this.boundingBox.width * this.boundingBox.height;
+    }
+
+    public boolean isRoughSquare() {
+        float pixelsPercent = boundingBox.width * percentageThreshold;
+        return (boundingBox.width + pixelsPercent > boundingBox.height &&
+                boundingBox.width - pixelsPercent < boundingBox.height);
     }
 
     public boolean hasBeenUpdated() {
