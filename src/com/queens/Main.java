@@ -23,6 +23,8 @@ public class Main {
     static private final int maxContrastDiff = 50;
     static private final int kSizeBlur = 7;
     static private ObjectPairing pairing = new ObjectPairing(ColourNames.Red, ColourNames.Green);
+    private static Server server = new Server();
+    private static Thread serverThread;
 
     public static void main(String[] args) {
 	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -32,8 +34,14 @@ public class Main {
             return;
         }
 
+        serverThread = new Thread(server);
+        serverThread.start();
         frame();
         loop();
+    }
+
+    public static boolean systemActive() {
+        return capture != null && capture.isOpened();
     }
 
     public static void loop() {
@@ -62,7 +70,12 @@ public class Main {
             areas.removeAll(toRemove);
             System.out.printf("ROTATION IS : %f\n", pairing.getRotation());
             show(image);
-        } while (capture.isOpened());
+            try {
+                server.putOnQueue("hello");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } while (systemActive());
     }
 
     public static Mat mask(Mat image, Colour colour) {
