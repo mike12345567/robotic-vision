@@ -9,18 +9,19 @@ public class Server implements Runnable {
     private static final String url = "http://localhost:3000/devices/locationData";
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
-    private static final int sendSpeedMs = 1000;
+    private static final int sendSpeedMs = 0;
+    private static final int retryConnectionMs = 1000;
+    private boolean noConnect = false;
 
     public Server() {}
 
-    private void sendData(String data, String urlParameters) {
+    private void sendData(String data, String urlParameters) throws InterruptedException {
         // Send post request
         HttpURLConnection connection = null;
         URL obj = null;
         DataOutputStream wr;
-        String inputLine;
-        BufferedReader in;
-        StringBuilder response;
+
+        System.out.println("SENDING DATA: " + data);
 
         try {
             obj = new URL(url);
@@ -41,51 +42,51 @@ public class Server implements Runnable {
         }
         connection.setRequestProperty("User-Agent", userAgent);
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
         connection.setDoOutput(true);
 
         try {
             wr = new DataOutputStream(connection.getOutputStream());
             wr.writeBytes(urlParameters);
+            wr.writeBytes(data);
             wr.flush();
             wr.close();
 
             int responseCode = connection.getResponseCode();
-            System.out.println("\nSending 'POST' request to URL : " + url);
-            System.out.println("\nPost parameters : " + urlParameters);
-            System.out.println("\nResponse Code : " + responseCode);
-
-            in = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream()));
-
-            response = new StringBuilder(data);
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-
-            in.close();
-
-            //print result
-            System.out.println(response.toString());
+            System.out.println("Response code: " + Integer.toString(responseCode));
+            noConnect = false;
         } catch (IOException e) {
-            e.printStackTrace();
+            if (e instanceof ConnectException) {
+                noConnect = true;
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void putOnQueue(String data) throws InterruptedException {
-        toSend.put(data);
+    public void putOnQueue(String data) {
+        try {
+            toSend.put(data);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void run() {
         while (Main.systemActive()) {
             String data = toSend.poll();
             try {
-                Thread.sleep(sendSpeedMs);
+                if (noConnect) {
+                    Thread.sleep(retryConnectionMs);
+                }
+                if (sendSpeedMs != 0) {
+                    Thread.sleep(sendSpeedMs);
+                }
+                if (data != null) {
+                    sendData(data, urlParameters);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
-            if (data != null) {
-                sendData(data, urlParameters);
             }
         }
     }

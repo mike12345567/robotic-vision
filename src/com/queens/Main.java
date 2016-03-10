@@ -1,5 +1,6 @@
 package com.queens;
 
+import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
@@ -24,6 +25,7 @@ public class Main {
     static private final int kSizeBlur = 7;
     static private ObjectPairing pairing = new ObjectPairing(ColourNames.Red, ColourNames.Green);
     private static Server server = new Server();
+    private static JsonSerializer serializer = new JsonSerializer();
     private static Thread serverThread;
 
     public static void main(String[] args) {
@@ -68,11 +70,12 @@ public class Main {
             }
             pairing.checkForPairing(areas);
             areas.removeAll(toRemove);
-            System.out.printf("ROTATION IS : %f\n", pairing.getRotation());
             show(image);
             try {
-                server.putOnQueue("hello");
-            } catch (InterruptedException e) {
+                serializer.start();
+                serializer.addSection(pairing);
+                server.putOnQueue(serializer.finish());
+            } catch (InvalidDataException e) {
                 e.printStackTrace();
             }
         } while (systemActive());

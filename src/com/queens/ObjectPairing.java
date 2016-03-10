@@ -3,8 +3,9 @@ package com.queens;
 import org.opencv.core.Point;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class ObjectPairing {
+public class ObjectPairing implements Jsonifable {
     static private final int nearThreshold = 5;
 
     ColourNames colourOne;  // back area is border colourOne, internal colourTwo
@@ -16,6 +17,22 @@ public class ObjectPairing {
     public ObjectPairing(ColourNames colourOne, ColourNames colourTwo) {
         this.colourOne = colourOne;
         this.colourTwo = colourTwo;
+    }
+
+    public int getX() {
+        if (ready) {
+            return backArea.getX() + frontArea.getX() / 2;
+        } else {
+            return 0;
+        }
+    }
+
+    public int getY() {
+        if (ready) {
+            return backArea.getY() + frontArea.getY() / 2;
+        } else {
+            return 0;
+        }
     }
 
     public float getRotation() {
@@ -89,5 +106,25 @@ public class ObjectPairing {
     private boolean pointsClose(Point one, Point two) {
         return (one.x - nearThreshold > two.x && one.x + nearThreshold < two.x &&
                 one.y - nearThreshold > two.y && one.y + nearThreshold < two.y);
+    }
+
+    @Override
+    public List<KeyValueObject> getKeyValuePairs() {
+        if (!ready) {
+            return null;
+        }
+
+        ArrayList<KeyValueObject> keyValueObjects = new ArrayList<KeyValueObject>();
+        // add the rotation for this object pairing
+
+        keyValueObjects.add(new KeyValueObject("rotation", Float.toString(getRotation())));
+
+        // build the location, this a parent JSON object with children of the x and y,
+        // server side this is nice to parse, it will appear as location.x/location.y
+        ArrayList<KeyValueObject> children = new ArrayList<KeyValueObject>();
+        children.add(new KeyValueObject("x", Integer.toString(getX())));
+        children.add(new KeyValueObject("y", Integer.toString(getY())));
+        keyValueObjects.add(new KeyValueObject("location", children));
+        return keyValueObjects;
     }
 }
