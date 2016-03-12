@@ -9,11 +9,18 @@ public class Server implements Runnable {
     private static final String url = "http://localhost:3000/devices/locationData";
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
-    private static final int sendSpeedMs = 0;
+    private static final int sendSpeedMs = 200;
     private static final int retryConnectionMs = 1000;
-    private boolean noConnect = false;
 
-    public Server() {}
+    private boolean noConnect = false;
+    private Thread serverThread;
+    private boolean isRunning = false;
+
+    public Server() {
+        serverThread = new Thread(this);
+        serverThread.start();
+        isRunning = true;
+    }
 
     private void sendData(String data, String urlParameters) throws InterruptedException {
         // Send post request
@@ -58,6 +65,7 @@ public class Server implements Runnable {
         } catch (IOException e) {
             if (e instanceof ConnectException) {
                 noConnect = true;
+                System.out.println("FAILED CANNOT CONNECT TO API");
             } else {
                 e.printStackTrace();
             }
@@ -72,8 +80,12 @@ public class Server implements Runnable {
         }
     }
 
+    public void shutdown() {
+        isRunning = false;
+    }
+
     public void run() {
-        while (Main.systemActive()) {
+        while (isRunning) {
             String data = toSend.poll();
             try {
                 if (noConnect) {

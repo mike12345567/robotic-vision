@@ -114,17 +114,6 @@ public class ObjectPairing implements Jsonifable {
             return null;
         }
 
-        ArrayList<KeyValueObject> keyValueObjects = new ArrayList<KeyValueObject>();
-        // add the rotation for this object pairing
-
-        keyValueObjects.add(new KeyValueObject("rotation", Float.toString(getRotation())));
-
-        // build the location, this a parent JSON object with children of the x and y,
-        // server side this is nice to parse, it will appear as location.x/location.y
-        ArrayList<KeyValueObject> children = new ArrayList<KeyValueObject>();
-        children.add(new KeyValueObject("x", Integer.toString(getX())));
-        children.add(new KeyValueObject("y", Integer.toString(getY())));
-        keyValueObjects.add(new KeyValueObject("location", children));
-        return keyValueObjects;
+        return Utilities.getRotationXYObject(getRotation(), getX(), getY());
     }
 }
