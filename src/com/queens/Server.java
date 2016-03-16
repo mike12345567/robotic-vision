@@ -9,12 +9,16 @@ public class Server implements Runnable {
     private static final String url = "http://localhost:3000/devices/locationData";
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
+    private static final int enqueueDelayMs = 100;
     private static final int sendSpeedMs = 200;
     private static final int retryConnectionMs = 1000;
+    private static final int queueEmptySize = 1000;
 
     private boolean noConnect = false;
     private Thread serverThread;
     private boolean isRunning = false;
+    private long lastEnqueue = 0;
+    private long lastSend = 0;
 
     public Server() {
         serverThread = new Thread(this);
@@ -74,29 +78,52 @@ public class Server implements Runnable {
 
     public void putOnQueue(String data) {
         try {
+            if (toSend.size() > queueEmptySize) {
+                toSend.clear();
+            }
             toSend.put(data);
+            lastEnqueue = System.currentTimeMillis();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
+    public boolean ready() {
+        int currentDelay = (noConnect ? retryConnectionMs : sendSpeedMs) + enqueueDelayMs;
+        return (lastEnqueue + currentDelay < System.currentTimeMillis());
+    }
+
     public void shutdown() {
+        toSend.clear();
         isRunning = false;
+    }
+
+    public void start() {
+        isRunning = true;
+        if (!serverThread.isAlive()) {
+            serverThread = new Thread(this);
+            serverThread.start();
+        }
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     public void run() {
         while (isRunning) {
-            String data = toSend.poll();
+            int currentDelay = noConnect ? retryConnectionMs : sendSpeedMs;
+            if (lastSend + currentDelay >= System.currentTimeMillis()) {
+                continue;
+            }
+
             try {
-                if (noConnect) {
-                    Thread.sleep(retryConnectionMs);
-                }
-                if (sendSpeedMs != 0) {
-                    Thread.sleep(sendSpeedMs);
-                }
+                String data = toSend.take();
+
                 if (data != null) {
                     sendData(data, urlParameters);
                 }
+                lastSend = System.currentTimeMillis();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -48,6 +48,11 @@ public class Main {
             pairing.checkForPairing(openCV.getAreas());
             openCV.getAreas().removeAll(toRemove);
             show(openCV.getImage());
+
+            if (!server.ready()) {
+                continue;
+            }
+
             try {
                 serializer.start();
                 serializer.addSection(pairing);

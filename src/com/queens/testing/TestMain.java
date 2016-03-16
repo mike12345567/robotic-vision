@@ -18,10 +18,19 @@ public class TestMain {
     private static void loop() {
         do {
             if (!window.isRunning()) {
+                if (server.isRunning()) {
+                    server.shutdown();
+                }
                 continue;
+            } else if (!server.isRunning()) {
+                server.start();
             }
 
             pairing.update(window.getRotation(), window.getXLocation(), window.getYLocation());
+
+            if (!server.ready()) {
+                continue;
+            }
 
             serializer.start();
             serializer.addSection(pairing);
