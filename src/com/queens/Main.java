@@ -17,7 +17,7 @@ public class Main {
 
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
-    private static ObjectPairing pairing = new ObjectPairing(ColourNames.Red, ColourNames.Green);
+    private static ObjectPairing pairing = new ObjectPairing(ColourNames.Green, ColourNames.Orange);
     private static OpenCV openCV;
 
     public static void main(String[] args) {

@@ -6,11 +6,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Server implements Runnable {
     private LinkedBlockingQueue<String> toSend = new LinkedBlockingQueue<String>();
+    private String latest = "";
     private static final String url = "http://localhost:3000/devices/locationData";
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
-    private static final int enqueueDelayMs = 100;
-    private static final int sendSpeedMs = 200;
+    private static final int enqueueDelayMs = 0;
+    private static final int sendSpeedMs = 50;
     private static final int retryConnectionMs = 1000;
     private static final int queueEmptySize = 1000;
 
@@ -66,6 +67,7 @@ public class Server implements Runnable {
             int responseCode = connection.getResponseCode();
             System.out.println("Response code: " + Integer.toString(responseCode));
             noConnect = false;
+            connection.disconnect();
         } catch (IOException e) {
             if (e instanceof ConnectException) {
                 noConnect = true;
@@ -82,6 +84,7 @@ public class Server implements Runnable {
                 toSend.clear();
             }
             toSend.put(data);
+            latest = data;
             lastEnqueue = System.currentTimeMillis();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -118,12 +121,13 @@ public class Server implements Runnable {
             }
 
             try {
-                String data = toSend.take();
+                String data = latest;
 
-                if (data != null) {
+                if (data != "") {
                     sendData(data, urlParameters);
                 }
                 lastSend = System.currentTimeMillis();
+                latest = "";
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

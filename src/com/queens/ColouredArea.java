@@ -4,7 +4,8 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
 public class ColouredArea {
-    private static final int threshold = 30;
+    private static final int locationThreshold = 30;
+    private static final int sizeThreshold = 5;
     private static final float percentageThreshold = 0.4f;
     private Rect boundingBox = null;
     private ColourNames colour;
@@ -44,13 +45,37 @@ public class ColouredArea {
     }
 
     public boolean withinArea(Rect newPosition) {
-        return withinThreshold(boundingBox.tl(), newPosition.tl()) &&
-               withinThreshold(boundingBox.br(), newPosition.br());
+        return withinArea(newPosition, locationThreshold);
     }
 
-    private boolean withinThreshold(Point currentPos, Point newPos) {
+    public boolean withinArea(Rect position, int threshold) {
+        return withinThreshold(boundingBox.tl(), position.tl(), threshold) &&
+                withinThreshold(boundingBox.br(), position.br(), threshold);
+    }
+
+    private boolean withinThreshold(Point currentPos, Point newPos, int threshold) {
         return (currentPos.x > (newPos.x - threshold) && currentPos.x < (newPos.x + threshold)) &&
                (currentPos.y > (newPos.y - threshold) && currentPos.y < (newPos.y + threshold));
+    }
+
+    public boolean close(Rect position, int threshold) {
+        double diffTLX = position.tl().x - boundingBox.tl().x;
+        double diffTLY = position.tl().y - boundingBox.tl().y;
+        double diffBRX = position.br().x - boundingBox.br().x;
+        double diffBRY = position.br().y - boundingBox.br().y;
+        if (diffTLX < 0) diffTLX *= -1;
+        if (diffTLY < 0) diffTLY *= -1;
+        if (diffBRX < 0) diffBRX *= -1;
+        if (diffBRY < 0) diffBRY *= -1;
+        return (diffTLX + diffTLY + diffBRX + diffBRY) < threshold;
+    }
+
+    public boolean withinSize(Rect rect) {
+        int diffWidth = this.boundingBox.width - rect.width;
+        if (diffWidth < 0) diffWidth *= -1;
+        int diffHeight = this.boundingBox.height - rect.height;
+        if (diffHeight < 0) diffHeight *= -1;
+        return (diffWidth < sizeThreshold && diffHeight < sizeThreshold);
     }
 
     public ColourNames getColour() {
@@ -59,6 +84,14 @@ public class ColouredArea {
 
     public int getSize() {
         return this.boundingBox.width * this.boundingBox.height;
+    }
+
+    public int getWidth() {
+        return this.boundingBox.width;
+    }
+
+    public int getHeight() {
+        return this.boundingBox.height;
     }
 
     public boolean isRoughSquare() {
@@ -73,6 +106,25 @@ public class ColouredArea {
 
     public void resetUpdated() {
         needsUpdated = true;
+    }
+
+    public void merge(Rect rect) {
+        double tlx, tly, brx, bry, difference;
+        tlx = boundingBox.tl().x > rect.tl().x ? rect.tl().x : boundingBox.tl().x;
+        tly = boundingBox.tl().y > rect.tl().y ? rect.tl().y : boundingBox.tl().y;
+        brx = boundingBox.br().x < rect.br().x ? rect.br().x : boundingBox.br().x;
+        bry = boundingBox.br().y < rect.br().y ? rect.br().y : boundingBox.br().y;
+
+        double[] vals = new double[4];
+        vals[0] = tlx;
+        vals[1] = tly;
+        difference = tlx - brx;
+        if (difference < 0) difference *= -1;
+        vals[2] = difference;
+        difference = tly - bry;
+        if (difference < 0) difference *= -1;
+        vals[3] = difference;
+        boundingBox.set(vals);
     }
 
     public void updatePosition(Rect newPosition) {

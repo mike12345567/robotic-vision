@@ -19,6 +19,6 @@ public class TestPairing implements Jsonifable {
 
     @Override
     public List<KeyValueObject> getKeyValuePairs() {
-        return Utilities.getRotationXYObject(rotation, xLocation, yLocation);
+        return Utilities.getRotationXYObject(rotation, xLocation, yLocation, 0);
     }
 }

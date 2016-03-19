@@ -8,8 +8,8 @@ import java.util.ArrayList;
 
 public class OpenCV {
     private final int thresholdSize = 10;
-    private final int maxContrastDiff = 50;
-    private final int kSizeBlur = 7;
+    private final int maxContrastDiff = 25;
+    private final int kSizeBlur = 3;
 
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
@@ -21,10 +21,10 @@ public class OpenCV {
         if (!capture.isOpened()) {
             throw new NullPointerException("Camera could not be loaded");
         }
-        maskColours.add(new Colour(ColourNames.Red));
-        maskColours.add(new Colour(ColourNames.Blue));
+        maskColours.add(new Colour(ColourNames.Orange));
+        //maskColours.add(new Colour(ColourNames.Blue));
         maskColours.add(new Colour(ColourNames.Green));
-        maskColours.add(new Colour(ColourNames.Yellow));
+        //maskColours.add(new Colour(ColourNames.Yellow));
     }
 
     /**********************
@@ -36,7 +36,8 @@ public class OpenCV {
         alterBrightness(image);
         for (Colour colour : maskColours) {
             Mat mask = mask(image, colour);
-            findContours(image, mask, colour);
+            findContours(mask, colour);
+            draw(image, colour);
         }
     }
 
@@ -104,6 +105,9 @@ public class OpenCV {
             }
         }
 
+        Mat dilation = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(6, 6));
+        Imgproc.dilate(output, output, dilation);
+
         Size size = new Size(7, 7);
         Mat str_el = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, size);
         Imgproc.morphologyEx(output, output, Imgproc.MORPH_OPEN, str_el);
@@ -111,7 +115,7 @@ public class OpenCV {
         return output;
     }
 
-    private void findContours(Mat output, Mat src, Colour colour) {
+    private void findContours(Mat src, Colour colour) {
         ArrayList<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
@@ -129,7 +133,7 @@ public class OpenCV {
                     if (colour.getName() != area.getColour()) {
                         continue;
                     }
-                    if (area.withinArea(rect)) {
+                    if (area.withinArea(rect) && area.withinSize(rect)) {
                         found = true;
                         area.updatePosition(rect);
                         break;
@@ -139,9 +143,44 @@ public class OpenCV {
                     ColouredArea area = new ColouredArea(rect, colour.getName());
                     areas.add(area);
                 }
+            }
+        }
+        mergeAreas();
+    }
+
+    private void draw(Mat output, Colour colour) {
+        for (ColouredArea area : areas) {
+            if (area.getColour() == colour.getName()) {
+                Rect rect = area.getBoundingBox();
                 Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
             }
         }
+    }
+
+    private void mergeAreas() {
+        ArrayList<ColouredArea> toRemove = new ArrayList<ColouredArea>();
+        for (ColouredArea area : areas) {
+            for (ColouredArea innerArea : areas) {
+                if (area == innerArea || area.getColour() != innerArea.getColour()) {
+                    continue;
+                }
+
+                int sizeDifference = innerArea.getSize() < area.getSize() ?
+                        innerArea.getSize() / area.getSize() :
+                        area.getSize() / innerArea.getSize();
+                int closeThreshold = innerArea.getWidth() > innerArea.getHeight() ? innerArea.getWidth() : innerArea.getHeight();
+                if (sizeDifference < 0.6 && area.close(innerArea.getBoundingBox(), closeThreshold*2)) {
+                    if (area.getSize() < innerArea.getSize()) {
+                        toRemove.add(area);
+                        innerArea.merge(area.getBoundingBox());
+                    } else {
+                        toRemove.add(innerArea);
+                        area.merge(innerArea.getBoundingBox());
+                    }
+                }
+            }
+        }
+        areas.removeAll(toRemove);
     }
 
     private static MatOfPoint2f convertTo2f(MatOfPoint point) {
