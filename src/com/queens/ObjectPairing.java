@@ -3,21 +3,23 @@ package com.queens;
 import org.opencv.core.Point;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ObjectPairing implements Jsonifable {
     static private final int nearThreshold = 5;
-    static private final int speedCalculation = 10;
-    static private final int avgCalculation = 3;
+    static private final int queueLength = 10;
 
-    LinkedList<Point> latestFrontLocations = new LinkedList<Point>();
-    LinkedList<Point> latestBackLocations = new LinkedList<Point>();
+    LinkedList<ComparablePoint> latestFrontLocations = new LinkedList<ComparablePoint>();
+    LinkedList<ComparablePoint> latestBackLocations = new LinkedList<ComparablePoint>();
+    LinkedList<Float> latestRotations = new LinkedList<Float>();
 
     ColourNames colourOne;  // back area is border colourOne, internal colourTwo
     ColouredArea backArea = null;
     ColourNames colourTwo;  // front area is border colourTwo, internal colourOne
     ColouredArea frontArea = null;
+    Point medianFront, medianBack; // save computation cycles, calculated every cycle during rotation calculation
 
     boolean ready = false;
     long rotateSpeedTimeMs = 0;
@@ -29,22 +31,19 @@ public class ObjectPairing implements Jsonifable {
         this.colourTwo = colourTwo;
     }
 
-    private Point avgLocation(LinkedList<Point> points, int count) {
-        int avgX = 0, avgY = 0;
+    private <T extends Comparable<T>> T medianList(LinkedList<T> list) {
+        if (list.size() == 0) return null;
+        LinkedList<T> copiedList = new LinkedList<T>(list);
 
-        if (count > points.size()) count = points.size();
-        for (int i = 0; i < count; i++) {
-            avgX += points.get(i).x;
-            avgY += points.get(i).y;
-        }
+        Collections.sort(copiedList);
 
-        return new Point(avgX / count, avgY / count);
+        return copiedList.get(copiedList.size()/2);
     }
 
     public int getX() {
-        if (ready) {
-            Point front = avgLocation(latestFrontLocations, avgCalculation);
-            Point back = avgLocation(latestBackLocations, avgCalculation);
+        if (ready && medianFront != null && medianBack != null) {
+            Point front = medianFront;
+            Point back = medianBack;
             return (int)(back.x + front.x / 2);
         } else {
             return 0;
@@ -52,9 +51,10 @@ public class ObjectPairing implements Jsonifable {
     }
 
     public int getY() {
-        if (ready) {
-            Point front = avgLocation(latestFrontLocations, avgCalculation);
-            Point back = avgLocation(latestBackLocations, avgCalculation);
+        if (ready && medianFront != null && medianBack != null) {
+
+            Point front = medianFront;
+            Point back = medianBack;
             return (int)(back.y + front.y / 2);
         } else {
             return 0;
@@ -62,12 +62,19 @@ public class ObjectPairing implements Jsonifable {
     }
 
     public float getRotation() {
-        return getRotation(avgLocation(latestFrontLocations, avgCalculation),
-                           avgLocation(latestBackLocations, avgCalculation));
+        if (ready) {
+            Float medianRotation = medianList(latestRotations);
+            if (medianRotation == null) {
+                medianRotation = 0f;
+            }
+            return medianRotation;
+        } else {
+            return 0f;
+        }
     }
 
-    private float getRotation(Point front, Point back) {
-        if (ready) {
+    private float calculateRotation(Point front, Point back) {
+        if (ready && front != null && back != null) {
             double x = back.x - front.x;
             double y = back.y - front.y;
             double length = Math.sqrt(x * x + y * y);
@@ -90,8 +97,8 @@ public class ObjectPairing implements Jsonifable {
 
     public float getRotationSpeed() {
         if (ready && rotateSpeedTimeMs != 0) {
-            int startRotation = (int) getRotation(latestFrontLocations.getLast(), latestBackLocations.getLast());
-            int endRotation = (int) getRotation(latestFrontLocations.getFirst(), latestBackLocations.getFirst());
+            int startRotation = (int) calculateRotation(latestFrontLocations.getLast(), latestBackLocations.getLast());
+            int endRotation = (int) calculateRotation(latestFrontLocations.getFirst(), latestBackLocations.getFirst());
 
             int phi = Math.abs(endRotation - startRotation) % 360;       // This is either the distance or 360 - distance
             int distance = phi > 180 ? 360 - phi : phi;
@@ -114,26 +121,37 @@ public class ObjectPairing implements Jsonifable {
                 continue;
             }
 
-            if (area.getColour() == this.colourOne && containsOther(currentAreas, area) && testDistance(area, backArea)) {
+            ColouredArea previousFront = frontArea, previousBack = backArea;
+            if (area.getColour() == this.colourOne && containsOther(currentAreas, area) && !tooClose(area, backArea)) {
                 this.frontArea = area;
             }
-            if (area.getColour() == this.colourTwo && containsOther(currentAreas, area) && testDistance(area, frontArea)) {
+            if (area.getColour() == this.colourTwo && containsOther(currentAreas, area) && !tooClose(area, frontArea)) {
                 this.backArea = area;
+            }
+            if (tooClose(this.frontArea, this.backArea)) {
+                this.frontArea = previousFront;
+                this.backArea = previousBack;
             }
         }
 
         if (this.frontArea != null && this.backArea != null) {
+            medianFront = medianList(latestFrontLocations);
+            medianBack = medianList(latestBackLocations);
             ready = true;
-            latestFrontLocations.offer(new Point(frontArea.getX(), frontArea.getY()));
-            if (latestFrontLocations.size() > speedCalculation) {
+            latestFrontLocations.offer(new ComparablePoint(frontArea.getPureX(), frontArea.getPureY()));
+            if (latestFrontLocations.size() > queueLength) {
                 latestFrontLocations.pop();
             }
-            latestBackLocations.offer(new Point(backArea.getX(), backArea.getY()));
-            if (latestBackLocations.size() > speedCalculation) {
+            latestBackLocations.offer(new ComparablePoint(backArea.getPureX(), backArea.getPureY()));
+            if (latestBackLocations.size() > queueLength) {
                 latestBackLocations.pop();
             }
+            latestRotations.offer(calculateRotation(medianFront, medianBack));
+            if (latestRotations.size() > queueLength) {
+                latestRotations.pop();
+            }
             cyclesSinceTimeUpdate++;
-            if (cyclesSinceTimeUpdate > speedCalculation) {
+            if (cyclesSinceTimeUpdate > queueLength) {
                 currentRotationSpeed = getRotationSpeed();
                 rotateSpeedTimeMs = System.currentTimeMillis();
                 cyclesSinceTimeUpdate = 0;
@@ -143,17 +161,17 @@ public class ObjectPairing implements Jsonifable {
         }
     }
 
-    private boolean testDistance(ColouredArea areaOne, ColouredArea areaTwo) {
-        if (areaOne == null || areaTwo == null) {
+    private boolean tooClose(ColouredArea areaOne, ColouredArea areaTwo) {
+        if (areaOne != null && areaTwo != null && areaOne.close(areaTwo.getBoundingBox(), 5)) {
             return true;
         }
-        return true;
+        return false;
     }
 
     private boolean containsOther(ArrayList<ColouredArea> currentAreas, ColouredArea toTest) {
         ColourNames lookingFor = toTest.getColour() == colourOne ? colourTwo : colourOne;
         for (ColouredArea area : currentAreas) {
-            if (area == toTest) {
+            if (area == toTest || tooClose(area, toTest)) {
                 continue;
             }
 

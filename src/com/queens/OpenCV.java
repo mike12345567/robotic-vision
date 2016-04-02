@@ -5,6 +5,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class OpenCV {
     private final int thresholdSize = 10;
@@ -14,14 +15,18 @@ public class OpenCV {
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
     private ArrayList<Colour> maskColours = new ArrayList<Colour>();
-    private Mat image = null;
+    private Mat lastImage = null;
+    private Mat cameraImage = null;
+    private Mat displayImage = null;
+    private HashMap<ColourNames, Mat> masks = new HashMap<ColourNames, Mat>();
+    public ArrayList<Point> points = new ArrayList<Point>();
 
     public OpenCV() {
         capture = new VideoCapture(0);
         if (!capture.isOpened()) {
             throw new NullPointerException("Camera could not be loaded");
         }
-        maskColours.add(new Colour(ColourNames.Orange));
+        maskColours.add(new Colour(ColourNames.OrangeAndRed));
         //maskColours.add(new Colour(ColourNames.Blue));
         maskColours.add(new Colour(ColourNames.Green));
         //maskColours.add(new Colour(ColourNames.Yellow));
@@ -31,13 +36,17 @@ public class OpenCV {
      *   MAIN FUNCTIONS   *
      **********************/
     public void process() {
-        image = new Mat();
-        capture.read(image);
-        alterBrightness(image);
+        lastImage = cameraImage;
+        cameraImage = new Mat();
+        capture.read(cameraImage);
+        alterBrightness(cameraImage);
+        displayImage = new Mat();
+        cameraImage.copyTo(displayImage);
         for (Colour colour : maskColours) {
-            Mat mask = mask(image, colour);
+            Mat mask = mask(cameraImage, colour);
+            masks.put(colour.getName(), mask);
             findContours(mask, colour);
-            draw(image, colour);
+            draw(displayImage, colour);
         }
     }
 
@@ -56,8 +65,20 @@ public class OpenCV {
         return areas;
     }
 
-    public Mat getImage() {
-        return image;
+    public Mat getCameraImage() {
+        return cameraImage;
+    }
+
+    public Mat getDisplayImage() {
+        return displayImage;
+    }
+
+    public Mat getLastImage() {
+        return lastImage;
+    }
+
+    public Mat getMaskImage(ColourNames colourName) {
+        return masks.get(colourName);
     }
 
     /**********************
@@ -105,7 +126,7 @@ public class OpenCV {
             }
         }
 
-        Mat dilation = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(6, 6));
+        Mat dilation = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.dilate(output, output, dilation);
 
         Size size = new Size(7, 7);
@@ -123,29 +144,45 @@ public class OpenCV {
 
         int count = contours.size();
 
-        for (int i = 0; i < count; i++) {
-            MatOfPoint2f point2f = new MatOfPoint2f();
-            Imgproc.approxPolyDP(convertTo2f(contours.get(i)), point2f, 3, true);
-            Rect rect = Imgproc.boundingRect(convertToP(point2f));
-            if (rect.size().width > thresholdSize && rect.size().height > thresholdSize) {
-                boolean found = false;
-                for (ColouredArea area : areas) {
-                    if (colour.getName() != area.getColour()) {
-                        continue;
-                    }
-                    if (area.withinArea(rect) && area.withinSize(rect)) {
-                        found = true;
-                        area.updatePosition(rect);
-                        break;
+        for (ColouredArea area : areas) {
+            if (colour.getName() != area.getColour()) {
+                continue;
+            }
+
+            Rect closest = null;
+            int currentBestDistance = 0;
+            int indexContours = 0;
+            for (int i = 0; i < count; i++) {
+                Rect rect = Utilities.contourToRect(contours.get(i));
+                if (rect.size().width > thresholdSize && rect.size().height > thresholdSize) {
+                    if (closest == null) {
+                        closest = rect;
+                    } else {
+                        int difference = Utilities.calculateRectDifference(closest, rect);
+                        if (difference < currentBestDistance) {
+                            currentBestDistance = difference;
+                            closest = rect;
+                            indexContours = i;
+                        }
                     }
                 }
-                if (!found) {
+            }
+            if (closest != null) {
+                area.updatePosition(closest);
+                contours.remove(indexContours);
+                count--;
+            }
+        }
+
+        if (count != 0) {
+            for (int i = 0; i < count; i++) {
+                Rect rect = Utilities.contourToRect(contours.get(i));
+                if (rect.size().width > thresholdSize && rect.size().height > thresholdSize) {
                     ColouredArea area = new ColouredArea(rect, colour.getName());
                     areas.add(area);
                 }
             }
         }
-        mergeAreas();
     }
 
     private void draw(Mat output, Colour colour) {
@@ -155,43 +192,10 @@ public class OpenCV {
                 Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
             }
         }
-    }
 
-    private void mergeAreas() {
-        ArrayList<ColouredArea> toRemove = new ArrayList<ColouredArea>();
-        for (ColouredArea area : areas) {
-            for (ColouredArea innerArea : areas) {
-                if (area == innerArea || area.getColour() != innerArea.getColour()) {
-                    continue;
-                }
-
-                int sizeDifference = innerArea.getSize() < area.getSize() ?
-                        innerArea.getSize() / area.getSize() :
-                        area.getSize() / innerArea.getSize();
-                int closeThreshold = innerArea.getWidth() > innerArea.getHeight() ? innerArea.getWidth() : innerArea.getHeight();
-                if (sizeDifference < 0.6 && area.close(innerArea.getBoundingBox(), closeThreshold*2)) {
-                    if (area.getSize() < innerArea.getSize()) {
-                        toRemove.add(area);
-                        innerArea.merge(area.getBoundingBox());
-                    } else {
-                        toRemove.add(innerArea);
-                        area.merge(innerArea.getBoundingBox());
-                    }
-                }
-            }
+        for (Point point : points) {
+            Rect rect = new Rect((int)point.x, (int)point.y, 5, 5);
+            Imgproc.rectangle(output, rect.tl(), rect.br(), new Scalar(255,255,255), 3);
         }
-        areas.removeAll(toRemove);
-    }
-
-    private static MatOfPoint2f convertTo2f(MatOfPoint point) {
-        MatOfPoint2f point2f = new MatOfPoint2f();
-        point2f.fromList(point.toList());
-        return point2f;
-    }
-
-    private static MatOfPoint convertToP(MatOfPoint2f point2f) {
-        MatOfPoint point = new MatOfPoint();
-        point.fromList(point2f.toList());
-        return point;
     }
 }

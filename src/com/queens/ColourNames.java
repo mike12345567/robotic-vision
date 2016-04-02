@@ -8,5 +8,6 @@ public enum ColourNames {
     SpecificBlue,
     Yellow,
     SpecificYellow,
-    Orange
+    Orange,
+    OrangeAndRed
 }

@@ -3,21 +3,24 @@ package com.queens;
 import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.videoio.VideoCapture;
 
 import javax.swing.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
 
 public class Main {
+    static private boolean disableServer = false;
+    static private boolean testMouseListener = false;
     static private JFrame window;
     static private ImageIcon image;
     static private JLabel label;
 
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
-    private static ObjectPairing pairing = new ObjectPairing(ColourNames.Green, ColourNames.Orange);
+    private static ObjectPairing pairing = new ObjectPairing(ColourNames.Green, ColourNames.OrangeAndRed);
     private static OpenCV openCV;
 
     public static void main(String[] args) {
@@ -47,18 +50,30 @@ public class Main {
             }
             pairing.checkForPairing(openCV.getAreas());
             openCV.getAreas().removeAll(toRemove);
-            show(openCV.getImage());
+            //show(openCV.getCameraImage());
+
+            Mat displayImage = openCV.getDisplayImage();
+            if (displayImage != null) {
+                show(displayImage);
+            }
 
             if (!server.ready()) {
                 continue;
             }
 
-            try {
-                serializer.start();
-                serializer.addSection(pairing);
-                server.putOnQueue(serializer.finish());
-            } catch (InvalidDataException e) {
-                e.printStackTrace();
+            if (disableServer) {
+                float rotation = pairing.getRotation();
+                int x = pairing.getX();
+                int y = pairing.getY();
+                System.out.printf("Rotation: %f X: %f Y: %f\n", rotation, x, y);
+            } else {
+                try {
+                    serializer.start();
+                    serializer.addSection(pairing);
+                    server.putOnQueue(serializer.finish());
+                } catch (InvalidDataException e) {
+                    e.printStackTrace();
+                }
             }
         } while (currentlyRunning());
     }
@@ -80,6 +95,44 @@ public class Main {
                 server.shutdown();
             }
         });
+
+        if (testMouseListener) {
+            window.addMouseListener(new MouseListener() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    int x = e.getX() - 6;
+                    int y = e.getY() - 27;
+                    openCV.points.add(new Point(x, y));
+                    Mat mat = new Mat();
+                    Imgproc.cvtColor(openCV.getCameraImage(), mat, Imgproc.COLOR_BGR2HSV);
+
+
+                    double array[] = mat.get(x, y);
+                    if (array == null) return;
+
+                    for (double number : array) {
+                        System.out.printf("%f, ", number);
+                    }
+                    System.out.println();
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                }
+            });
+        }
     }
 
     public static void show(Mat img) {

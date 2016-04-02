@@ -15,11 +15,18 @@ public class Colour {
     public Colour(ColourNames colour) {
         this.name = colour;
         switch (colour) {
+            case OrangeAndRed:
+                rgbColour = new Scalar(128, 128, 255);
+                hsvThresholdMin.add(new Scalar(0, 60, 60));     // orange
+                hsvThresholdMax.add(new Scalar(10, 255, 255));  // orange
+                hsvThresholdMin.add(new Scalar(160, 80, 80));   // red
+                hsvThresholdMax.add(new Scalar(179, 255, 255)); // red
+                break;
             case Orange:
                 rgbColour = new Scalar(128, 128, 255);
-                hsvThresholdMin.add(new Scalar(0, 80, 80));     // orange
-                hsvThresholdMax.add(new Scalar(16, 255, 255));  // orange
-            break;
+                hsvThresholdMin.add(new Scalar(0, 60, 60));     // orange
+                hsvThresholdMax.add(new Scalar(10, 255, 255));  // orange
+                break;
             case Red:
                 rgbColour = new Scalar(0, 0, 255);
                 hsvThresholdMin.add(new Scalar(160, 80, 80));   // red
@@ -36,8 +43,8 @@ public class Colour {
                 break;
             case Green:
                 rgbColour = new Scalar(0, 255, 0);
-                hsvThresholdMin.add(new Scalar(39, 70, 70));    // green
-                hsvThresholdMax.add(new Scalar(75, 255, 255));  // green
+                hsvThresholdMin.add(new Scalar(40, 60, 60));   // green
+                hsvThresholdMax.add(new Scalar(69, 255, 255)); // green
                 break;
             case SpecificGreen:
                 rgbColour = new Scalar(0, 255, 0);
