@@ -50,7 +50,6 @@ public class Main {
             }
             pairing.checkForPairing(openCV.getAreas());
             openCV.getAreas().removeAll(toRemove);
-            //show(openCV.getCameraImage());
 
             Mat displayImage = openCV.getDisplayImage();
             if (displayImage != null) {
@@ -65,7 +64,7 @@ public class Main {
                 float rotation = pairing.getRotation();
                 int x = pairing.getX();
                 int y = pairing.getY();
-                System.out.printf("Rotation: %f X: %f Y: %f\n", rotation, x, y);
+                System.out.printf("Rotation: %f X: %d Y: %d\n", rotation, x, y);
             } else {
                 try {
                     serializer.start();
@@ -104,7 +103,7 @@ public class Main {
                     int y = e.getY() - 27;
                     openCV.points.add(new Point(x, y));
                     Mat mat = new Mat();
-                    Imgproc.cvtColor(openCV.getCameraImage(), mat, Imgproc.COLOR_BGR2HSV);
+                    Imgproc.cvtColor(openCV.getDisplayImage(), mat, Imgproc.COLOR_BGR2HSV);
 
 
                     double array[] = mat.get(x, y);

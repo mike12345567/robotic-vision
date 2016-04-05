@@ -43,7 +43,7 @@ public class Colour {
                 break;
             case Green:
                 rgbColour = new Scalar(0, 255, 0);
-                hsvThresholdMin.add(new Scalar(40, 60, 60));   // green
+                hsvThresholdMin.add(new Scalar(40, 50, 50));   // green
                 hsvThresholdMax.add(new Scalar(69, 255, 255)); // green
                 break;
             case SpecificGreen:

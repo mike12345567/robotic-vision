@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ObjectPairing implements Jsonifable {
     static private final int nearThreshold = 5;
-    static private final int queueLength = 10;
+    static private final int queueLength = 3;
 
     LinkedList<ComparablePoint> latestFrontLocations = new LinkedList<ComparablePoint>();
     LinkedList<ComparablePoint> latestBackLocations = new LinkedList<ComparablePoint>();
