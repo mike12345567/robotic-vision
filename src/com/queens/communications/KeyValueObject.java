@@ -1,4 +1,4 @@
-package com.queens;
+package com.queens.communications;
 
 import java.util.List;
 

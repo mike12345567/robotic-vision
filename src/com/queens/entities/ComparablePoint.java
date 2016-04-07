@@ -1,5 +1,6 @@
-package com.queens;
+package com.queens.entities;
 
+import com.queens.utilities.Utilities;
 import org.opencv.core.Point;
 
 public class ComparablePoint extends Point implements Comparable<ComparablePoint> {

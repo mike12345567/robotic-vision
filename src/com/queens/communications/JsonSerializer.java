@@ -1,4 +1,4 @@
-package com.queens;
+package com.queens.communications;
 
 import com.sun.media.sound.InvalidDataException;
 
@@ -19,7 +19,7 @@ public class JsonSerializer {
         builder = null;
     }
 
-    public void addSection(Jsonifable object) {
+    public void addSection(String key, Jsonifable object) {
         List<KeyValueObject> keyValuePairs = object.getKeyValuePairs();
         if (keyValuePairs == null) {
             return;
@@ -29,7 +29,7 @@ public class JsonSerializer {
             builder = factory.createObjectBuilder();
         }
         // TODO: deal with multiple robots in the scene
-        KeyValueObject externalObject = new KeyValueObject("robot-one", keyValuePairs);
+        KeyValueObject externalObject = new KeyValueObject(key, keyValuePairs);
         convertKeyValuePair(builder, externalObject);
     }
 

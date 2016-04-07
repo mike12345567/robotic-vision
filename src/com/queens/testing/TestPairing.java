@@ -1,8 +1,8 @@
 package com.queens.testing;
 
-import com.queens.Jsonifable;
-import com.queens.KeyValueObject;
-import com.queens.Utilities;
+import com.queens.communications.Jsonifable;
+import com.queens.communications.KeyValueObject;
+import com.queens.utilities.Utilities;
 
 import java.util.List;
 

@@ -1,5 +1,7 @@
-package com.queens;
+package com.queens.entities;
 
+import com.queens.utilities.Utilities;
+import com.queens.colours.ColourNames;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 

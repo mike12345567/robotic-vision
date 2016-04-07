@@ -1,5 +1,9 @@
-package com.queens;
+package com.queens.entities;
 
+import com.queens.utilities.Utilities;
+import com.queens.colours.ColourNames;
+import com.queens.communications.Jsonifable;
+import com.queens.communications.KeyValueObject;
 import org.opencv.core.Point;
 
 import java.util.ArrayList;
@@ -15,6 +19,7 @@ public class ObjectPairing implements Jsonifable {
     LinkedList<ComparablePoint> latestBackLocations = new LinkedList<ComparablePoint>();
     LinkedList<Float> latestRotations = new LinkedList<Float>();
 
+    private String pairingName;
     ColourNames colourOne;  // back area is border colourOne, internal colourTwo
     ColouredArea backArea = null;
     ColourNames colourTwo;  // front area is border colourTwo, internal colourOne
@@ -26,9 +31,10 @@ public class ObjectPairing implements Jsonifable {
     int cyclesSinceTimeUpdate = 0;
     float currentRotationSpeed = 0;
 
-    public ObjectPairing(ColourNames colourOne, ColourNames colourTwo) {
+    public ObjectPairing(String pairingName, ColourNames colourOne, ColourNames colourTwo) {
         this.colourOne = colourOne;
         this.colourTwo = colourTwo;
+        this.pairingName = pairingName;
     }
 
     private <T extends Comparable<T>> T medianList(LinkedList<T> list) {
@@ -71,6 +77,14 @@ public class ObjectPairing implements Jsonifable {
         } else {
             return 0f;
         }
+    }
+
+    public boolean isActive() {
+        return ready;
+    }
+
+    public String getPairingName() {
+        return pairingName;
     }
 
     private float calculateRotation(Point front, Point back) {

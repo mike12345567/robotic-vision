@@ -1,5 +1,10 @@
 package com.queens;
 
+import com.queens.colours.Colour;
+import com.queens.colours.ColourNames;
+import com.queens.entities.ColouredArea;
+import com.queens.utilities.MatOperations;
+import com.queens.utilities.Utilities;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
@@ -9,8 +14,8 @@ import java.util.HashMap;
 
 public class OpenCV {
     private final int thresholdSize = 10;
-    private final int maxContrastDiff = 25;
     private final int kSizeBlur = 3;
+    private final int framesBetweenBrightnessCalcs = 30;
 
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
@@ -20,6 +25,8 @@ public class OpenCV {
     private Mat displayImage = null;
     private HashMap<ColourNames, Mat> masks = new HashMap<ColourNames, Mat>();
     public ArrayList<Point> points = new ArrayList<Point>();
+    private int lastBrightnessCalculation = framesBetweenBrightnessCalcs;
+    private Colour white = new Colour(ColourNames.White);
 
     public OpenCV() {
         capture = new VideoCapture(0);
@@ -27,9 +34,10 @@ public class OpenCV {
             throw new NullPointerException("Camera could not be loaded");
         }
         maskColours.add(new Colour(ColourNames.OrangeAndRed));
-        //maskColours.add(new Colour(ColourNames.Blue));
+        maskColours.add(new Colour(ColourNames.Blue));
         maskColours.add(new Colour(ColourNames.Green));
-        //maskColours.add(new Colour(ColourNames.Yellow));
+        maskColours.add(new Colour(ColourNames.Yellow));
+        maskColours.add(new Colour(ColourNames.Orange));
     }
 
     /**********************
@@ -39,15 +47,22 @@ public class OpenCV {
         lastImage = cameraImage;
         cameraImage = new Mat();
         capture.read(cameraImage);
-        alterBrightness(cameraImage);
+        if (lastBrightnessCalculation >= framesBetweenBrightnessCalcs) {
+            lastBrightnessCalculation = 0;
+            MatOperations.setBrightnessModeForColours(cameraImage, maskColours);
+        }
+
+        MatOperations.alterBrightness(cameraImage);
         displayImage = new Mat();
         cameraImage.copyTo(displayImage);
         for (Colour colour : maskColours) {
             Mat mask = mask(cameraImage, colour);
             masks.put(colour.getName(), mask);
             findContours(mask, colour);
-            draw(displayImage, colour);
+            MatOperations.drawOutline(displayImage, areas, colour);
+            MatOperations.drawPoint(displayImage, points, white);
         }
+        lastBrightnessCalculation++;
     }
 
     public void shutdown() {
@@ -84,26 +99,6 @@ public class OpenCV {
     /**********************
      *  UTILITY FUNCTIONS *
      **********************/
-    private void alterBrightness(Mat image) {
-
-        Scalar mean = Core.mean(image);
-        double totalMean = (mean.val[0] + mean.val[1] + mean.val[2])/3;
-        totalMean -= 50;
-        double alpha = 1;
-        if (totalMean > maxContrastDiff) {
-            totalMean = maxContrastDiff;
-        }
-        if (totalMean < -maxContrastDiff) {
-            totalMean = -maxContrastDiff;
-        }
-        if (totalMean > 0) {
-            alpha -= totalMean / 100;
-        } else {
-            totalMean *= -2;
-        }
-        image.convertTo(image, -1, alpha, totalMean);
-    }
-
     private Mat mask(Mat image, Colour colour) {
         Mat hsv_frame = new Mat();
 
@@ -182,20 +177,6 @@ public class OpenCV {
                     areas.add(area);
                 }
             }
-        }
-    }
-
-    private void draw(Mat output, Colour colour) {
-        for (ColouredArea area : areas) {
-            if (area.getColour() == colour.getName()) {
-                Rect rect = area.getBoundingBox();
-                Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
-            }
-        }
-
-        for (Point point : points) {
-            Rect rect = new Rect((int)point.x, (int)point.y, 5, 5);
-            Imgproc.rectangle(output, rect.tl(), rect.br(), new Scalar(255,255,255), 3);
         }
     }
 }

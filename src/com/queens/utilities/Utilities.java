@@ -1,5 +1,6 @@
-package com.queens;
+package com.queens.utilities;
 
+import com.queens.communications.KeyValueObject;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;

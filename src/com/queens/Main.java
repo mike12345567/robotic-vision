@@ -1,5 +1,10 @@
 package com.queens;
 
+import com.queens.colours.ColourNames;
+import com.queens.communications.JsonSerializer;
+import com.queens.communications.Server;
+import com.queens.entities.ColouredArea;
+import com.queens.entities.ObjectPairing;
 import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -12,6 +17,7 @@ import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
 
 public class Main {
+    static private boolean outputEnabled = false;
     static private boolean disableServer = false;
     static private boolean testMouseListener = false;
     static private JFrame window;
@@ -20,12 +26,18 @@ public class Main {
 
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
-    private static ObjectPairing pairing = new ObjectPairing(ColourNames.Green, ColourNames.OrangeAndRed);
+    private static ArrayList<ObjectPairing> robots = new ArrayList<ObjectPairing>();
+    private static ObjectPairing pairingTwo = new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed);
     private static OpenCV openCV;
 
     public static void main(String[] args) {
 	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         openCV = new OpenCV();
+
+        robots.add(new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
+        robots.add(new ObjectPairing("testbot-two", ColourNames.Yellow, ColourNames.Green));
+        robots.add(new ObjectPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
+        robots.add(new ObjectPairing("testbot-four", ColourNames.OrangeAndRed, ColourNames.Blue));
 
         frame();
         loop();
@@ -48,7 +60,9 @@ public class Main {
                     toRemove.add(openCV.getAreas().get(i));
                 }
             }
-            pairing.checkForPairing(openCV.getAreas());
+            for (ObjectPairing robot : robots) {
+                robot.checkForPairing(openCV.getAreas());
+            }
             openCV.getAreas().removeAll(toRemove);
 
             Mat displayImage = openCV.getDisplayImage();
@@ -60,16 +74,23 @@ public class Main {
                 continue;
             }
 
-            if (disableServer) {
-                float rotation = pairing.getRotation();
-                int x = pairing.getX();
-                int y = pairing.getY();
-                System.out.printf("Rotation: %f X: %d Y: %d\n", rotation, x, y);
-            } else {
+            if (disableServer && outputEnabled) {
+                for (ObjectPairing robot : robots) {
+                    if (!robot.isActive()) continue;
+                    float rotation = robot.getRotation();
+                    int x = robot.getX();
+                    int y = robot.getY();
+                    System.out.printf("%s Rotation: %f X: %d Y: %d\n", robot.getPairingName(), rotation, x, y);
+                }
+
+            } else if (!disableServer) {
                 try {
-                    serializer.start();
-                    serializer.addSection(pairing);
-                    server.putOnQueue(serializer.finish());
+                    for (ObjectPairing robot : robots) {
+                        if (!robot.isActive()) continue;
+                        serializer.start();
+                        serializer.addSection(robot.getPairingName(), robot);
+                        server.putOnQueue(serializer.finish());
+                    }
                 } catch (InvalidDataException e) {
                     e.printStackTrace();
                 }
@@ -103,10 +124,9 @@ public class Main {
                     int y = e.getY() - 27;
                     openCV.points.add(new Point(x, y));
                     Mat mat = new Mat();
-                    Imgproc.cvtColor(openCV.getDisplayImage(), mat, Imgproc.COLOR_BGR2HSV);
+                    Imgproc.cvtColor(openCV.getLastImage(), mat, Imgproc.COLOR_BGR2HSV);
 
-
-                    double array[] = mat.get(x, y);
+                    double array[] = mat.get(y, x);
                     if (array == null) return;
 
                     for (double number : array) {

@@ -1,7 +1,7 @@
 package com.queens.testing;
 
-import com.queens.JsonSerializer;
-import com.queens.Server;
+import com.queens.communications.JsonSerializer;
+import com.queens.communications.Server;
 import com.sun.media.sound.InvalidDataException;
 
 public class TestMain {
@@ -33,7 +33,7 @@ public class TestMain {
             }
 
             serializer.start();
-            serializer.addSection(pairing);
+            serializer.addSection("testbot-one", pairing);
             try {
                 server.putOnQueue(serializer.finish());
             } catch (InvalidDataException e) {
