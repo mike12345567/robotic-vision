@@ -10,6 +10,7 @@ import java.util.List;
 public class MatOperations {
     static private final int maxContrastDiff = 25;
     static private final int isBrightThreshold = 80;
+    static private int lastBrightnessAvg = 0;
 
     static public int averageBrightness(Mat image) {
         Mat grayscale = new Mat();
@@ -32,7 +33,8 @@ public class MatOperations {
     }
 
     static public void setBrightnessModeForColours(Mat cameraImage, List<Colour> colours) {
-        boolean isBright = averageBrightness(cameraImage) >= isBrightThreshold;
+        MatOperations.lastBrightnessAvg = averageBrightness(cameraImage);
+        boolean isBright = MatOperations.lastBrightnessAvg >= isBrightThreshold;
         for (Colour colour : colours) {
             colour.setIsBright(isBright);
         }

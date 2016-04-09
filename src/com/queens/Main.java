@@ -19,7 +19,7 @@ import java.util.ArrayList;
 public class Main {
     static private boolean outputEnabled = false;
     static private boolean disableServer = false;
-    static private boolean testMouseListener = false;
+    static private boolean testMouseListener = true;
     static private JFrame window;
     static private ImageIcon image;
     static private JLabel label;
@@ -27,7 +27,6 @@ public class Main {
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
     private static ArrayList<ObjectPairing> robots = new ArrayList<ObjectPairing>();
-    private static ObjectPairing pairingTwo = new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed);
     private static OpenCV openCV;
 
     public static void main(String[] args) {
@@ -35,12 +34,10 @@ public class Main {
         openCV = new OpenCV();
 
         robots.add(new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
-        robots.add(new ObjectPairing("testbot-two", ColourNames.Yellow, ColourNames.Green));
+        robots.add(new ObjectPairing("testbot-two", ColourNames.OrangeAndRed, ColourNames.Blue));
         robots.add(new ObjectPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
-        robots.add(new ObjectPairing("testbot-four", ColourNames.OrangeAndRed, ColourNames.Blue));
+        robots.add(new ObjectPairing("testbot-four", ColourNames.Yellow, ColourNames.Green));
 
-        frame();
-        loop();
     }
 
     public static boolean currentlyRunning() {
@@ -85,12 +82,12 @@ public class Main {
 
             } else if (!disableServer) {
                 try {
+                    serializer.start();
                     for (ObjectPairing robot : robots) {
                         if (!robot.isActive()) continue;
-                        serializer.start();
                         serializer.addSection(robot.getPairingName(), robot);
-                        server.putOnQueue(serializer.finish());
                     }
+                    server.putOnQueue(serializer.finish());
                 } catch (InvalidDataException e) {
                     e.printStackTrace();
                 }

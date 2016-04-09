@@ -22,7 +22,7 @@ public class Colour {
         hsvThresholdMin.clear();
         hsvThresholdMax.clear();
         int hueMin, hueMax;
-        int satMin;
+        int satMin, valMin;
         switch (name) {
             case White: // DO NOT THRESHOLD BY THIS
                 rgbColour = new Scalar(255, 255, 255);
@@ -30,39 +30,44 @@ public class Colour {
             case OrangeAndRed:
                 hueMax = isBright ? 10 : 5;
                 rgbColour = new Scalar(128, 128, 255);
-                hsvThresholdMin.add(new Scalar(0, 60, 100));        // orange
-                hsvThresholdMax.add(new Scalar(hueMax, 255, 255));  // orange
-                hsvThresholdMin.add(new Scalar(160, 60, 100));      // red
-                hsvThresholdMax.add(new Scalar(179, 255, 255));     // red
+                hsvThresholdMin.add(new Scalar(0, 60, 100));         // orange
+                hsvThresholdMax.add(new Scalar(hueMax, 255, 255));   // orange
+                hsvThresholdMin.add(new Scalar(160, 60, 100));       // red
+                hsvThresholdMax.add(new Scalar(179, 255, 255));      // red
                 break;
             case Orange:
                 hueMin = isBright ? 11 : 6;
                 hueMax = isBright ? 18 : 11;
                 rgbColour = new Scalar(0, 153, 255);
-                hsvThresholdMin.add(new Scalar(hueMin, 100, 180));  // orange
-                hsvThresholdMax.add(new Scalar(hueMax, 255, 255));  // orange
+                hsvThresholdMin.add(new Scalar(hueMin, 100, 180));   // orange
+                hsvThresholdMax.add(new Scalar(hueMax, 255, 255));   // orange
                 break;
             case Red:
                 rgbColour = new Scalar(0, 0, 255);
-                hsvThresholdMin.add(new Scalar(160, 80, 80));       // red
-                hsvThresholdMax.add(new Scalar(179, 255, 255));     // red
+                hsvThresholdMin.add(new Scalar(160, 80, 80));        // red
+                hsvThresholdMax.add(new Scalar(179, 255, 255));      // red
             case Blue:
                 satMin = isBright ? 160 : 80;
                 rgbColour = new Scalar(255, 0, 0);
-                hsvThresholdMin.add(new Scalar(90, 80, satMin));    // blue
-                hsvThresholdMax.add(new Scalar(110, 255, 255));     // blue
+                hsvThresholdMin.add(new Scalar(90, 80, satMin));     // blue
+                hsvThresholdMax.add(new Scalar(110, 255, 255));      // blue
                 break;
             case Green:
                 rgbColour = new Scalar(0, 255, 0);
-                hsvThresholdMin.add(new Scalar(42, 50, 80));        // green
-                hsvThresholdMax.add(new Scalar(69, 255, 255));      // green
+                hsvThresholdMin.add(new Scalar(42, 50, 80));         // green
+                hsvThresholdMax.add(new Scalar(69, 255, 255));       // green
                 break;
             case Yellow:
-                hueMin = isBright ? 22 : 11;
-                hueMax = isBright ? 33 : 20;
+                satMin = isBright ? 130 : 100;
+                valMin = isBright ? 210 : 160;
                 rgbColour = new Scalar(0, 255, 255);
-                hsvThresholdMin.add(new Scalar(hueMin, 60, 140));   // yellow
-                hsvThresholdMax.add(new Scalar(hueMax, 255, 255));  // yellow
+                hsvThresholdMin.add(new Scalar(11, satMin, valMin)); // yellow
+                hsvThresholdMax.add(new Scalar(33, 255, 255));       // yellow
+                hsvThresholdMin.add(new Scalar(25, 0, 200));         // bright yellow
+                hsvThresholdMax.add(new Scalar(42, 140, 255));       // bright yellow
+                hsvThresholdMin.add(new Scalar(58, 0, 200));         // bright yellow
+                hsvThresholdMax.add(new Scalar(62, 50, 255));        // bright yellow
+
                 break;
         }
     }
