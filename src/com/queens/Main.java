@@ -38,6 +38,8 @@ public class Main {
         robots.add(new ObjectPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
         robots.add(new ObjectPairing("testbot-four", ColourNames.Yellow, ColourNames.Green));
 
+        frame();
+        loop();
     }
 
     public static boolean currentlyRunning() {
