@@ -1,5 +1,8 @@
 package com.queens.communications;
 
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -8,6 +11,7 @@ public class Server implements Runnable {
     private LinkedBlockingQueue<String> toSend = new LinkedBlockingQueue<String>();
     private String latest = "";
     private static final String url = "http://localhost:3000/devices/locationData";
+    private static final String wsUrl = "ws://localhost:4201";
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
     private static final int enqueueDelayMs = 0;
@@ -16,18 +20,59 @@ public class Server implements Runnable {
     private static final int queueEmptySize = 1000;
 
     private boolean noConnect = false;
+    private boolean webSocketConnected = false;
     private Thread serverThread;
     private boolean isRunning = false;
     private long lastEnqueue = 0;
     private long lastSend = 0;
 
+    private WebSocketClient client;
+
     public Server() {
         serverThread = new Thread(this);
         serverThread.start();
         isRunning = true;
+        connectWebsocket();
+
     }
 
+    private void connectWebsocket() {
+        try {
+            if (client != null && !webSocketConnected) {
+                client.close();
+                client = null;
+            }
+            client = new WebSocketClient(new URI(wsUrl)) {
+                @Override
+                public void onOpen(ServerHandshake serverHandshake) {
+                    webSocketConnected = true;
+                }
+
+                public void onMessage(String s) {
+                }
+
+                public void onClose(int i, String s, boolean b) {
+                    webSocketConnected = false;
+                }
+
+                public void onError(Exception e) {
+                    webSocketConnected = false;
+                    client.close();
+                }
+            };
+            client.connect();
+        } catch (URISyntaxException e) {
+            client.close();
+        }
+    }
+
+
     private void sendData(String data, String urlParameters) throws InterruptedException {
+        // if the web socket isn't connected then fallback to AJAX
+        if (webSocketConnected) {
+            sendDataWebSocket(data);
+            return;
+        }
         // Send post request
         HttpURLConnection connection = null;
         URL obj = null;
@@ -76,6 +121,16 @@ public class Server implements Runnable {
                 e.printStackTrace();
             }
         }
+        if (!webSocketConnected && !noConnect) {
+            connectWebsocket();
+        }
+    }
+
+    private void sendDataWebSocket(String data) {
+        if (data != null) {
+            System.out.println("Websocket sent: " + data);
+            client.send(data);
+        }
     }
 
     public void putOnQueue(String data) {
@@ -115,7 +170,13 @@ public class Server implements Runnable {
 
     public void run() {
         while (isRunning) {
-            int currentDelay = noConnect ? retryConnectionMs : sendSpeedMs;
+            int currentDelay;
+            if (webSocketConnected) {
+                currentDelay = 0;
+            } else {
+                currentDelay = noConnect ? retryConnectionMs : sendSpeedMs;
+            }
+
             if (lastSend + currentDelay >= System.currentTimeMillis()) {
                 continue;
             }

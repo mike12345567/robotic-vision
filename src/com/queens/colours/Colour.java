@@ -22,9 +22,14 @@ public class Colour {
         hsvThresholdMin.clear();
         hsvThresholdMax.clear();
         int hueMin, hueMax;
-        int satMin, valMin;
+        int satMin, satMax;
+        int valMin, valMax;
         switch (name) {
-            case White: // DO NOT THRESHOLD BY THIS
+            case White:
+                satMax = isBright ? 15 : 40;
+                valMin = isBright ? 180 : 120;
+                hsvThresholdMin.add(new Scalar(0, 0, valMin));
+                hsvThresholdMax.add(new Scalar(255, satMax, 255));
                 rgbColour = new Scalar(255, 255, 255);
                 break;
             case OrangeAndRed:
@@ -56,6 +61,8 @@ public class Colour {
                 rgbColour = new Scalar(0, 255, 0);
                 hsvThresholdMin.add(new Scalar(42, 50, 80));         // green
                 hsvThresholdMax.add(new Scalar(69, 255, 255));       // green
+                hsvThresholdMin.add(new Scalar(77, 80, 80));         // dark green
+                hsvThresholdMax.add(new Scalar(83, 150, 180));       // dark green
                 break;
             case Yellow:
                 satMin = isBright ? 130 : 100;
@@ -63,9 +70,9 @@ public class Colour {
                 rgbColour = new Scalar(0, 255, 255);
                 hsvThresholdMin.add(new Scalar(11, satMin, valMin)); // yellow
                 hsvThresholdMax.add(new Scalar(33, 255, 255));       // yellow
-                hsvThresholdMin.add(new Scalar(25, 0, 200));         // bright yellow
+                hsvThresholdMin.add(new Scalar(25, 10, 200));        // bright yellow
                 hsvThresholdMax.add(new Scalar(42, 140, 255));       // bright yellow
-                hsvThresholdMin.add(new Scalar(58, 0, 200));         // bright yellow
+                hsvThresholdMin.add(new Scalar(58, 10, 200));        // bright yellow
                 hsvThresholdMax.add(new Scalar(62, 50, 255));        // bright yellow
 
                 break;

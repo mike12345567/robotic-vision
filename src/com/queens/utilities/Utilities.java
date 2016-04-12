@@ -1,6 +1,7 @@
 package com.queens.utilities;
 
 import com.queens.communications.KeyValueObject;
+import com.queens.entities.ColouredArea;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Utilities {
+    private static int tooCloseThreshold = 5;
+
     public static List<KeyValueObject> getRotationXYObject(float rotation, int x, int y, float rotationSpeed) {
         ArrayList<KeyValueObject> keyValueObjects = new ArrayList<KeyValueObject>();
         // add the rotation for this object pairing
@@ -24,6 +27,19 @@ public class Utilities {
         children.add(new KeyValueObject("x", Integer.toString(x)));
         children.add(new KeyValueObject("y", Integer.toString(y)));
         keyValueObjects.add(new KeyValueObject("location", children));
+        return keyValueObjects;
+    }
+
+    public static List<KeyValueObject> getRectObject(int x, int y, int width, int height) {
+        ArrayList<KeyValueObject> keyValueObjects = new ArrayList<KeyValueObject>();
+
+        ArrayList<KeyValueObject> children = new ArrayList<KeyValueObject>();
+        children.add(new KeyValueObject("x", Integer.toString(x)));
+        children.add(new KeyValueObject("y", Integer.toString(y)));
+        children.add(new KeyValueObject("width", Integer.toString(width)));
+        children.add(new KeyValueObject("height", Integer.toString(height)));
+        keyValueObjects.add(new KeyValueObject("location", children));
+
         return keyValueObjects;
     }
 
@@ -64,5 +80,12 @@ public class Utilities {
         MatOfPoint point = new MatOfPoint();
         point.fromList(point2f.toList());
         return point;
+    }
+
+    public static boolean tooClose(ColouredArea areaOne, ColouredArea areaTwo) {
+        if (areaOne != null && areaTwo != null && areaOne.close(areaTwo.getBoundingBox(), tooCloseThreshold)) {
+            return true;
+        }
+        return false;
     }
 }

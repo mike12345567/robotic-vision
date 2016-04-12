@@ -12,18 +12,18 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class ObjectPairing implements Jsonifable {
-    static private final int nearThreshold = 5;
     static private final int queueLength = 3;
+    static private final int msToSeconds = 1000;
 
     LinkedList<ComparablePoint> latestFrontLocations = new LinkedList<ComparablePoint>();
     LinkedList<ComparablePoint> latestBackLocations = new LinkedList<ComparablePoint>();
     LinkedList<Float> latestRotations = new LinkedList<Float>();
-
+    
     private String pairingName;
     ColourNames colourOne;  // back area is border colourOne, internal colourTwo
-    ColouredArea backArea = null;
+    BorderedArea backArea = null;
     ColourNames colourTwo;  // front area is border colourTwo, internal colourOne
-    ColouredArea frontArea = null;
+    BorderedArea frontArea = null;
     Point medianFront, medianBack; // save computation cycles, calculated every cycle during rotation calculation
 
     boolean ready = false;
@@ -35,6 +35,9 @@ public class ObjectPairing implements Jsonifable {
         this.colourOne = colourOne;
         this.colourTwo = colourTwo;
         this.pairingName = pairingName;
+
+        frontArea = new BorderedArea(true, colourTwo, colourOne);
+        backArea = new BorderedArea(true, colourOne, colourTwo);
     }
 
     private <T extends Comparable<T>> T medianList(LinkedList<T> list) {
@@ -117,46 +120,45 @@ public class ObjectPairing implements Jsonifable {
             int phi = Math.abs(endRotation - startRotation) % 360;       // This is either the distance or 360 - distance
             int distance = phi > 180 ? 360 - phi : phi;
             int timeDiff = (int)(System.currentTimeMillis() - rotateSpeedTimeMs);
-            return ((float)distance / timeDiff);
+            float output = ((float)distance / timeDiff);
+            output *= msToSeconds;
+            if (output < 1) output = 0f;
+            return output;
         }
         return 0;
     }
 
     public void checkForPairing(ArrayList<ColouredArea> currentAreas) {
-        if (!currentAreas.contains(backArea)) {
-            backArea = null;
-        }
-        if (!currentAreas.contains(frontArea)) {
-            frontArea = null;
-        }
-
         for (ColouredArea area : currentAreas) {
-            if (!area.isRoughSquare()) {
+            if (!area.isRoughSquare() || area.isInUse()) {
                 continue;
             }
 
-            ColouredArea previousFront = frontArea, previousBack = backArea;
-            if (area.getColour() == this.colourOne && containsOther(currentAreas, area) && !tooClose(area, backArea)) {
-                this.frontArea = area;
-            }
-            if (area.getColour() == this.colourTwo && containsOther(currentAreas, area) && !tooClose(area, frontArea)) {
-                this.backArea = area;
-            }
-            if (tooClose(this.frontArea, this.backArea)) {
+            BorderedArea previousFront = frontArea, previousBack = backArea;
+            frontArea.update(currentAreas);
+            backArea.update(currentAreas);
+            if (Utilities.tooClose(this.frontArea.getArea(), this.backArea.getArea())) {
                 this.frontArea = previousFront;
                 this.backArea = previousBack;
             }
         }
 
-        if (this.frontArea != null && this.backArea != null) {
+        updateQueues();
+    }
+
+    private void updateQueues() {
+        ColouredArea frontColouredArea = this.frontArea.getArea();
+        ColouredArea backColouredArea = this.backArea.getArea();
+
+        if (frontColouredArea != null && backColouredArea != null) {
             medianFront = medianList(latestFrontLocations);
             medianBack = medianList(latestBackLocations);
             ready = true;
-            latestFrontLocations.offer(new ComparablePoint(frontArea.getPureX(), frontArea.getPureY()));
+            latestFrontLocations.offer(new ComparablePoint(frontColouredArea.getPureX(), frontColouredArea.getPureY()));
             if (latestFrontLocations.size() > queueLength) {
                 latestFrontLocations.pop();
             }
-            latestBackLocations.offer(new ComparablePoint(backArea.getPureX(), backArea.getPureY()));
+            latestBackLocations.offer(new ComparablePoint(backColouredArea.getPureX(), backColouredArea.getPureY()));
             if (latestBackLocations.size() > queueLength) {
                 latestBackLocations.pop();
             }
@@ -173,34 +175,6 @@ public class ObjectPairing implements Jsonifable {
         } else {
             ready = false;
         }
-    }
-
-    private boolean tooClose(ColouredArea areaOne, ColouredArea areaTwo) {
-        if (areaOne != null && areaTwo != null && areaOne.close(areaTwo.getBoundingBox(), 5)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean containsOther(ArrayList<ColouredArea> currentAreas, ColouredArea toTest) {
-        ColourNames lookingFor = toTest.getColour() == colourOne ? colourTwo : colourOne;
-        for (ColouredArea area : currentAreas) {
-            if (area == toTest || tooClose(area, toTest)) {
-                continue;
-            }
-
-            if (area.getColour() == lookingFor &&
-                toTest.getBoundingBox().contains(area.getTopCorner()) &&
-                toTest.getBoundingBox().contains(area.getBottomCorner())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean pointsClose(Point one, Point two, int threshold) {
-        return (one.x - threshold < two.x && one.x + threshold > two.x &&
-                one.y - threshold < two.y && one.y + threshold > two.y);
     }
 
     @Override

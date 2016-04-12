@@ -3,50 +3,54 @@ package com.queens;
 import com.queens.colours.ColourNames;
 import com.queens.communications.JsonSerializer;
 import com.queens.communications.Server;
+import com.queens.entities.BorderedArea;
 import com.queens.entities.ColouredArea;
 import com.queens.entities.ObjectPairing;
+import com.queens.utilities.OutputFrame;
 import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
 
-import javax.swing.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Main {
     static private boolean outputEnabled = false;
     static private boolean disableServer = false;
-    static private boolean testMouseListener = true;
-    static private JFrame window;
-    static private ImageIcon image;
-    static private JLabel label;
 
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
     private static ArrayList<ObjectPairing> robots = new ArrayList<ObjectPairing>();
+    private static ArrayList<BorderedArea> hazards = new ArrayList<BorderedArea>();
     private static OpenCV openCV;
+    private static OutputFrame frame;
 
     public static void main(String[] args) {
 	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         openCV = new OpenCV();
+        frame = new OutputFrame();
 
         robots.add(new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
         robots.add(new ObjectPairing("testbot-two", ColourNames.OrangeAndRed, ColourNames.Blue));
         robots.add(new ObjectPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
         robots.add(new ObjectPairing("testbot-four", ColourNames.Yellow, ColourNames.Green));
 
-        frame();
         loop();
+    }
+
+    public static void shutdown() {
+        openCV.shutdown();
+        server.shutdown();
+    }
+
+    public static OpenCV getOpenCV() {
+        return openCV;
     }
 
     public static boolean currentlyRunning() {
         return openCV.systemActive();
     }
 
-    public static void loop() {
+    private static void loop() {
         do {
             for (ColouredArea area : openCV.getAreas()) {
                 area.resetUpdated();
@@ -59,126 +63,74 @@ public class Main {
                     toRemove.add(openCV.getAreas().get(i));
                 }
             }
+            openCV.getAreas().removeAll(toRemove);
+
             for (ObjectPairing robot : robots) {
                 robot.checkForPairing(openCV.getAreas());
             }
-            openCV.getAreas().removeAll(toRemove);
+
+            //handleHazards();
+
+            sendData();
 
             Mat displayImage = openCV.getDisplayImage();
             if (displayImage != null) {
-                show(displayImage);
-            }
-
-            if (!server.ready()) {
-                continue;
-            }
-
-            if (disableServer && outputEnabled) {
-                for (ObjectPairing robot : robots) {
-                    if (!robot.isActive()) continue;
-                    float rotation = robot.getRotation();
-                    int x = robot.getX();
-                    int y = robot.getY();
-                    System.out.printf("%s Rotation: %f X: %d Y: %d\n", robot.getPairingName(), rotation, x, y);
-                }
-
-            } else if (!disableServer) {
-                try {
-                    serializer.start();
-                    for (ObjectPairing robot : robots) {
-                        if (!robot.isActive()) continue;
-                        serializer.addSection(robot.getPairingName(), robot);
-                    }
-                    server.putOnQueue(serializer.finish());
-                } catch (InvalidDataException e) {
-                    e.printStackTrace();
-                }
+                frame.show(displayImage);
             }
         } while (currentlyRunning());
     }
 
-
-    public static void frame(){
-        window = new JFrame();
-        image = new ImageIcon();
-        label = new JLabel();
-        label.setIcon(image);
-        window.getContentPane().add(label);
-        window.setResizable(false);
-        window.setTitle("Robotic Vision");
-        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        window.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                openCV.shutdown();
-                server.shutdown();
+    private static void handleHazards() {
+        /* update old hazards, remove those which are no longer valid */
+        Iterator<BorderedArea> hazardIterator = hazards.iterator();
+        while (hazardIterator.hasNext()) {
+            BorderedArea hazard = hazardIterator.next();
+            hazard.update(openCV.getAreas());
+            if (!hazard.isActive()) {
+                hazardIterator.remove();
             }
-        });
-
-        if (testMouseListener) {
-            window.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    int x = e.getX() - 6;
-                    int y = e.getY() - 27;
-                    openCV.points.add(new Point(x, y));
-                    Mat mat = new Mat();
-                    Imgproc.cvtColor(openCV.getLastImage(), mat, Imgproc.COLOR_BGR2HSV);
-
-                    double array[] = mat.get(y, x);
-                    if (array == null) return;
-
-                    for (double number : array) {
-                        System.out.printf("%f, ", number);
-                    }
-                    System.out.println();
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                }
-            });
         }
+
+        /* generate new hazards if any are found */
+        BorderedArea hazard;
+        do {
+            hazard = new BorderedArea(false, ColourNames.White, ColourNames.OrangeAndRed);
+            hazard.update(openCV.getAreas());
+            if (hazard.isActive()) {
+                hazards.add(hazard);
+            }
+        } while (hazard.isActive());
     }
 
-    public static void show(Mat img) {
-        BufferedImage bufImage;
-        try {
-            bufImage = toBufferedImage(img);
-            image.setImage(bufImage);
-            window.pack();
-            label.updateUI();
-            window.setVisible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private static void sendData() {
+        if (!server.ready()) {
+            return;
         }
-    }
 
-    public static BufferedImage toBufferedImage(Mat m) {
-        int type = BufferedImage.TYPE_BYTE_GRAY;
-        if (m.channels() > 1) {
-            type = BufferedImage.TYPE_3BYTE_BGR;
+        if (disableServer && outputEnabled) {
+            for (ObjectPairing robot : robots) {
+                if (!robot.isActive()) continue;
+                float rotation = robot.getRotation();
+                int x = robot.getX();
+                int y = robot.getY();
+                System.out.printf("%s Rotation: %f X: %d Y: %d\n", robot.getPairingName(), rotation, x, y);
+            }
+
+        } else if (!disableServer) {
+            try {
+                serializer.start();
+                for (ObjectPairing robot : robots) {
+                    if (!robot.isActive()) continue;
+                    serializer.addSection(robot.getPairingName(), robot);
+                }
+
+                if (hazards.size() > 0) {
+                    serializer.addArray("hazards", "hazard", hazards);
+                }
+                server.putOnQueue(serializer.finish());
+            } catch (InvalidDataException e) {
+                e.printStackTrace();
+            }
         }
-        int bufferSize = m.channels() * m.cols() * m.rows();
-        byte[] b = new byte[bufferSize];
-        m.get(0, 0, b); // get all the pixels
-        BufferedImage image = new BufferedImage(m.cols(), m.rows(), type);
-        final byte[] targetPixels = ((DataBufferByte) image.getRaster()
-                .getDataBuffer()).getData();
-        System.arraycopy(b, 0, targetPixels, 0, b.length);
-        return image;
-
     }
 }

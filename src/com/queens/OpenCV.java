@@ -38,6 +38,7 @@ public class OpenCV {
         maskColours.add(new Colour(ColourNames.Green));
         maskColours.add(new Colour(ColourNames.Yellow));
         maskColours.add(new Colour(ColourNames.Orange));
+        maskColours.add(new Colour(ColourNames.White));
     }
 
     /**********************

@@ -12,6 +12,7 @@ public class ColouredArea {
     private Rect boundingBox = null;
     private ColourNames colour;
     private boolean needsUpdated = false;
+    private boolean inUse = false;
 
     public ColouredArea(Rect boundingBox, ColourNames colour) {
         this.colour = colour;
@@ -100,6 +101,14 @@ public class ColouredArea {
 
     public void resetUpdated() {
         needsUpdated = true;
+    }
+
+    public void setInUse(boolean inUse) {
+        this.inUse = inUse;
+    }
+
+    public boolean isInUse() {
+        return inUse;
     }
 
     public void merge(Rect rect) {

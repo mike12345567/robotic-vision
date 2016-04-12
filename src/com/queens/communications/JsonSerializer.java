@@ -1,8 +1,10 @@
 package com.queens.communications;
 
 import com.sun.media.sound.InvalidDataException;
+import com.sun.media.sound.PCMtoPCMCodec;
 
 import javax.json.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class JsonSerializer {
@@ -19,6 +21,20 @@ public class JsonSerializer {
         builder = null;
     }
 
+    public <T extends Jsonifable> void addArray(String arrayKey, String baseObjKey, ArrayList<T> objects) {
+        JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
+        int count = 0;
+        for (Jsonifable object : objects) {
+            JsonObjectBuilder objBuilder = factory.createObjectBuilder();
+            convertKeyValuePair(objBuilder, new KeyValueObject(baseObjKey + ++count, object.getKeyValuePairs()));
+            arrayBuilder.add(objBuilder.build());
+        }
+        if (builder == null) {
+            builder = factory.createObjectBuilder();
+        }
+        builder.add(arrayKey, arrayBuilder.build());
+    }
+
     public void addSection(String key, Jsonifable object) {
         List<KeyValueObject> keyValuePairs = object.getKeyValuePairs();
         if (keyValuePairs == null) {
@@ -28,7 +44,7 @@ public class JsonSerializer {
         if (builder == null) {
             builder = factory.createObjectBuilder();
         }
-        // TODO: deal with multiple robots in the scene
+
         KeyValueObject externalObject = new KeyValueObject(key, keyValuePairs);
         convertKeyValuePair(builder, externalObject);
     }
