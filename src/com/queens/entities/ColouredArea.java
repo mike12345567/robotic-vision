@@ -62,7 +62,7 @@ public class ColouredArea {
     }
 
     public boolean close(Rect position, int threshold) {
-        return Utilities.calculateRectDifference(position, this.boundingBox) < threshold * 4;
+        return Utilities.calculatePointDifference(position.tl(), this.boundingBox.tl(), true) < threshold * 2;
     }
 
     public boolean withinSize(Rect rect) {
