@@ -6,6 +6,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
 public class ColouredArea {
+    private static final int maxFramesSinceUseForDraw = 10;
     private static final int locationThreshold = 30;
     private static final int sizeThreshold = 5;
     private static final float percentageThreshold = 0.4f;
@@ -13,6 +14,7 @@ public class ColouredArea {
     private ColourNames colour;
     private boolean needsUpdated = false;
     private boolean inUse = false;
+    private int framesSinceInUse = 0;
 
     public ColouredArea(Rect boundingBox, ColourNames colour) {
         this.colour = colour;
@@ -87,6 +89,15 @@ public class ColouredArea {
 
     public int getHeight() {
         return this.boundingBox.height;
+    }
+
+    public boolean shouldDraw() {
+        if (!isInUse()) {
+            framesSinceInUse++;
+        } else {
+            framesSinceInUse = 0;
+        }
+        return framesSinceInUse < maxFramesSinceUseForDraw;
     }
 
     public boolean isRoughSquare() {

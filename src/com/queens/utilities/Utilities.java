@@ -88,4 +88,8 @@ public class Utilities {
         }
         return false;
     }
+
+    public static String generateArrayElemName(String baseName, int number) {
+        return baseName + number;
+    }
 }

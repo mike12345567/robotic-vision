@@ -7,9 +7,11 @@ import com.queens.entities.BorderedArea;
 import com.queens.entities.ColouredArea;
 import com.queens.entities.ObjectPairing;
 import com.queens.utilities.OutputFrame;
+import com.queens.utilities.Utilities;
 import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -57,6 +59,8 @@ public class Main {
             }
 
             openCV.process();
+            BufferedImage displayImage = frame.toBufferedImage(openCV.getDisplayImage());
+
             ArrayList<ColouredArea> toRemove = new ArrayList<ColouredArea>();
             for (int i = 0; i < openCV.getAreas().size(); i++) {
                 if (!openCV.getAreas().get(i).hasBeenUpdated()) {
@@ -67,27 +71,35 @@ public class Main {
 
             for (ObjectPairing robot : robots) {
                 robot.checkForPairing(openCV.getAreas());
+                if (robot.isActive()) {
+                    displayImage = frame.addLabel(displayImage, robot.getPairingName(), robot.getX(), robot.getY());
+                }
             }
 
-            //handleHazards();
+            displayImage = handleHazards(displayImage);
 
             sendData();
 
-            Mat displayImage = openCV.getDisplayImage();
             if (displayImage != null) {
                 frame.show(displayImage);
             }
+
         } while (currentlyRunning());
     }
 
-    private static void handleHazards() {
+    private static BufferedImage handleHazards(BufferedImage toAddHazards) {
         /* update old hazards, remove those which are no longer valid */
         Iterator<BorderedArea> hazardIterator = hazards.iterator();
+        int count = 1;
+
         while (hazardIterator.hasNext()) {
             BorderedArea hazard = hazardIterator.next();
             hazard.update(openCV.getAreas());
             if (!hazard.isActive()) {
                 hazardIterator.remove();
+            } else {
+                String hazardName = Utilities.generateArrayElemName("hazard", count++);
+                toAddHazards = frame.addLabel(toAddHazards, hazardName, hazard.getX(), hazard.getY());
             }
         }
 
@@ -100,6 +112,7 @@ public class Main {
                 hazards.add(hazard);
             }
         } while (hazard.isActive());
+        return toAddHazards;
     }
 
     private static void sendData() {

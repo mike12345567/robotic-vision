@@ -1,7 +1,7 @@
 package com.queens.communications;
 
+import com.queens.utilities.Utilities;
 import com.sun.media.sound.InvalidDataException;
-import com.sun.media.sound.PCMtoPCMCodec;
 
 import javax.json.*;
 import java.util.ArrayList;
@@ -23,10 +23,11 @@ public class JsonSerializer {
 
     public <T extends Jsonifable> void addArray(String arrayKey, String baseObjKey, ArrayList<T> objects) {
         JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
-        int count = 0;
+        int count = 1;
         for (Jsonifable object : objects) {
             JsonObjectBuilder objBuilder = factory.createObjectBuilder();
-            convertKeyValuePair(objBuilder, new KeyValueObject(baseObjKey + ++count, object.getKeyValuePairs()));
+            String key = Utilities.generateArrayElemName(baseObjKey, count++);
+            convertKeyValuePair(objBuilder, new KeyValueObject(key, object.getKeyValuePairs()));
             arrayBuilder.add(objBuilder.build());
         }
         if (builder == null) {

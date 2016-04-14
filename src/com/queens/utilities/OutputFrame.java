@@ -7,10 +7,12 @@ import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.util.HashMap;
 
 public class OutputFrame {
     static private boolean testMouseListener = true;
@@ -18,12 +20,12 @@ public class OutputFrame {
     static private ImageIcon image;
     static private JLabel label;
 
-
     public OutputFrame(){
         window = new JFrame();
         image = new ImageIcon();
         label = new JLabel();
         label.setIcon(image);
+        window.getContentPane().setLayout(null);
         window.getContentPane().add(label);
         window.setResizable(false);
         window.setTitle("Robotic Vision");
@@ -63,20 +65,36 @@ public class OutputFrame {
         }
     }
 
-    public void show(Mat img) {
-        BufferedImage bufImage;
-        try {
-            bufImage = toBufferedImage(img);
-            image.setImage(bufImage);
-            window.pack();
-            label.updateUI();
-            window.setVisible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void show(BufferedImage img) {
+        image.setImage(img);
+        label.setBounds(0, 0, image.getIconWidth(), image.getIconHeight());
+        window.pack();
+        window.setPreferredSize(new Dimension(image.getIconWidth(), image.getIconHeight()));
+        label.updateUI();
+        window.setVisible(true);
     }
 
-    private BufferedImage toBufferedImage(Mat m) {
+
+    public BufferedImage addLabel(BufferedImage img, String name, int x, int y) {
+        return addString(name, img, x, y);
+    }
+
+    private BufferedImage addString(String string, BufferedImage old, int x, int y) {
+        int w = old.getWidth();
+        int h = old.getHeight();
+        BufferedImage img = new BufferedImage(
+                w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = img.createGraphics();
+        g2d.drawImage(old, 0, 0, null);
+        g2d.setPaint(Color.black);
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.drawString(string, x, y);
+        g2d.dispose();
+        return img;
+    }
+
+
+    public BufferedImage toBufferedImage(Mat m) {
         int type = BufferedImage.TYPE_BYTE_GRAY;
         if (m.channels() > 1) {
             type = BufferedImage.TYPE_3BYTE_BGR;

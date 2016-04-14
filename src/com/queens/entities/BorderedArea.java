@@ -53,6 +53,14 @@ public class BorderedArea implements Jsonifable {
         return borderArea;
     }
 
+    public int getX() {
+        return borderArea.getX();
+    }
+
+    public int getY() {
+        return borderArea.getY();
+    }
+
     public boolean isActive() {
         return this.insideArea != null && this.borderArea != null;
     }

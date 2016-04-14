@@ -68,7 +68,7 @@ public class MatOperations {
 
     static public void drawOutline(Mat output, List<ColouredArea> areas, Colour colour) {
         for (ColouredArea area : areas) {
-            if (area.getColour() == colour.getName()) {
+            if (area.getColour() == colour.getName() && area.shouldDraw()) {
                 Rect rect = area.getBoundingBox();
                 Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
             }

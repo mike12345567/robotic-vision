@@ -51,9 +51,10 @@ public class ObjectPairing implements Jsonifable {
 
     public int getX() {
         if (ready && medianFront != null && medianBack != null) {
-            Point front = medianFront;
-            Point back = medianBack;
-            return (int)(back.x + front.x / 2);
+            double smaller = Math.min(medianFront.x, medianBack.x);
+            double larger = Math.max(medianFront.x, medianBack.x);
+            int difference = (int)(larger - smaller);
+            return (int)(smaller + difference);
         } else {
             return 0;
         }
@@ -61,10 +62,10 @@ public class ObjectPairing implements Jsonifable {
 
     public int getY() {
         if (ready && medianFront != null && medianBack != null) {
-
-            Point front = medianFront;
-            Point back = medianBack;
-            return (int)(back.y + front.y / 2);
+            double smaller = Math.min(medianFront.y, medianBack.y);
+            double larger = Math.max(medianFront.y, medianBack.y);
+            int difference = (int)(larger - smaller);
+            return (int)(smaller + difference);
         } else {
             return 0;
         }
