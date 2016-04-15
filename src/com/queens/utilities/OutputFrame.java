@@ -10,6 +10,8 @@ import org.opencv.imgproc.Imgproc;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -41,6 +43,7 @@ public class OutputFrame {
         if (testMouseListener) {
             window.addMouseListener(new MyMouseListener(server));
         }
+        window.setVisible(true);
     }
 
     public void show(BufferedImage img) {
@@ -49,7 +52,6 @@ public class OutputFrame {
         window.pack();
         window.setPreferredSize(new Dimension(image.getIconWidth(), image.getIconHeight()));
         label.updateUI();
-        window.setVisible(true);
     }
 
 

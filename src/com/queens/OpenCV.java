@@ -17,8 +17,8 @@ public class OpenCV {
     private final int thresholdSize = 10;
     private final int kSizeBlur = 3;
     private final int framesBetweenBrightnessCalcs = 30;
-    private final int captureWidth = 854;
-    private final int captureHeight = 480;
+    private final int captureWidth = 1280;
+    private final int captureHeight = 720;
 
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
@@ -27,12 +27,12 @@ public class OpenCV {
     private Mat cameraImage = null;
     private Mat displayImage = null;
     private HashMap<ColourNames, Mat> masks = new HashMap<ColourNames, Mat>();
-    public ArrayList<Point> points = new ArrayList<Point>();
+    public Point point = null;
     private int lastBrightnessCalculation = framesBetweenBrightnessCalcs;
     private Colour white = new Colour(ColourNames.White);
 
     public OpenCV() {
-        capture = new VideoCapture(0);
+        capture = new VideoCapture(1);
         capture.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, captureWidth);
         capture.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, captureHeight);
         if (!capture.isOpened()) {
@@ -71,7 +71,7 @@ public class OpenCV {
     public void addColouredAreaOutputs() {
         for (Colour colour : maskColours) {
             MatOperations.drawOutline(displayImage, areas, colour);
-            MatOperations.drawPoint(displayImage, points, white);
+            MatOperations.drawPoint(displayImage, point, white);
         }
     }
 

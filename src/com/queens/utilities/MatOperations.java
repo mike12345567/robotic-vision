@@ -59,11 +59,11 @@ public class MatOperations {
         image.convertTo(image, -2, alpha, totalMean);
     }
 
-    static public void drawPoint(Mat output, List<Point> points, Colour colour) {
-        for (Point point : points) {
-            Rect rect = new Rect((int)point.x, (int)point.y, 5, 5);
-            Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
-        }
+    static public void drawPoint(Mat output, Point point, Colour colour) {
+        if (point == null) return;
+
+        Rect rect = new Rect((int)point.x, (int)point.y, 5, 5);
+        Imgproc.rectangle(output, rect.tl(), rect.br(), colour.rgbColour, 3);
     }
 
     static public void drawOutline(Mat output, List<ColouredArea> areas, Colour colour) {

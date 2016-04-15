@@ -25,7 +25,7 @@ public class MyMouseListener implements MouseListener {
         OpenCV openCV = Main.getOpenCV();
         int x = e.getX() - 6;
         int y = e.getY() - 27;
-        openCV.points.add(new Point(x, y));
+        openCV.point = new Point(x, y);
         Mat mat = new Mat();
         Imgproc.cvtColor(openCV.getLastImage(), mat, Imgproc.COLOR_BGR2HSV);
 
