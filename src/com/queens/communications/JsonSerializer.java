@@ -1,7 +1,6 @@
 package com.queens.communications;
 
 import com.queens.utilities.Utilities;
-import com.sun.media.sound.InvalidDataException;
 
 import javax.json.*;
 import java.util.ArrayList;
@@ -50,9 +49,17 @@ public class JsonSerializer {
         convertKeyValuePair(builder, externalObject);
     }
 
-    public String finish() throws InvalidDataException {
+    public void addSingleData(String key, String value) {
+        if (builder == null) {
+            builder = factory.createObjectBuilder();
+        }
+
+        builder.add(key, value);
+    }
+
+    public String finish() {
         if (!ready) {
-            throw new InvalidDataException("No JSON data provided");
+            return null;
         }
 
         return builder.build().toString();

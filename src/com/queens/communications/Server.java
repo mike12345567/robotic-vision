@@ -10,8 +10,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Server implements Runnable {
     private LinkedBlockingQueue<String> toSend = new LinkedBlockingQueue<String>();
     private String latest = "";
-    private static final String url = "http://localhost:3000/devices/locationData";
-    private static final String wsUrl = "ws://localhost:4201";
+    private static final int portAjax = 3000;
+    private static final int portWS = 4201;
+    private static String hostname = "localhost";
+    private static String baseUrl = "http://"+hostname+":"+Integer.toString(portAjax)+"/";
+    private static String url = baseUrl + "devices/locationData";
+    private static String wsUrl = "ws://"+hostname+":"+Integer.toString(portWS);
     private static final String userAgent = "Mozilla/5.0";
     private static final String urlParameters = "";
     private static final int enqueueDelayMs = 0;
@@ -66,10 +70,17 @@ public class Server implements Runnable {
         }
     }
 
+    public void sendPost(String data, String url) {
+        try {
+            sendData(data, urlParameters, baseUrl + url, false);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
-    private void sendData(String data, String urlParameters) throws InterruptedException {
+    private void sendData(String data, String urlParameters, String url, boolean overWebSocket) throws InterruptedException {
         // if the web socket isn't connected then fallback to AJAX
-        if (webSocketConnected) {
+        if (overWebSocket && webSocketConnected) {
             sendDataWebSocket(data);
             return;
         }
@@ -185,7 +196,7 @@ public class Server implements Runnable {
                 String data = latest;
 
                 if (data != "") {
-                    sendData(data, urlParameters);
+                    sendData(data, urlParameters, url, true);
                 }
                 lastSend = System.currentTimeMillis();
                 latest = "";

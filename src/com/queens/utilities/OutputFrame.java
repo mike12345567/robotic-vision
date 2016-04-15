@@ -2,6 +2,8 @@ package com.queens.utilities;
 
 import com.queens.Main;
 import com.queens.OpenCV;
+import com.queens.communications.Server;
+import com.queens.entities.MyMouseListener;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
@@ -12,7 +14,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.util.HashMap;
 
 public class OutputFrame {
     static private boolean testMouseListener = true;
@@ -20,7 +21,7 @@ public class OutputFrame {
     static private ImageIcon image;
     static private JLabel label;
 
-    public OutputFrame(){
+    public OutputFrame(Server server){
         window = new JFrame();
         image = new ImageIcon();
         label = new JLabel();
@@ -38,30 +39,7 @@ public class OutputFrame {
         });
 
         if (testMouseListener) {
-            window.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    OpenCV openCV = Main.getOpenCV();
-                    int x = e.getX() - 6;
-                    int y = e.getY() - 27;
-                    openCV.points.add(new Point(x, y));
-                    Mat mat = new Mat();
-                    Imgproc.cvtColor(openCV.getLastImage(), mat, Imgproc.COLOR_BGR2HSV);
-
-                    double array[] = mat.get(y, x);
-                    if (array == null) return;
-
-                    for (double number : array) {
-                        System.out.printf("%f, ", number);
-                    }
-                    System.out.println();
-                }
-
-                public void mousePressed(MouseEvent e) {}
-                public void mouseReleased(MouseEvent e) {}
-                public void mouseEntered(MouseEvent e) {}
-                public void mouseExited(MouseEvent e) {}
-            });
+            window.addMouseListener(new MyMouseListener(server));
         }
     }
 

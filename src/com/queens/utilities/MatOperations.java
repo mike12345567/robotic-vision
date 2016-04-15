@@ -56,7 +56,7 @@ public class MatOperations {
         } else {
             totalMean *= -2;
         }
-        image.convertTo(image, -1, alpha, totalMean);
+        image.convertTo(image, -2, alpha, totalMean);
     }
 
     static public void drawPoint(Mat output, List<Point> points, Colour colour) {

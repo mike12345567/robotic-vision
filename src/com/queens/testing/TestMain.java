@@ -43,12 +43,11 @@ public class TestMain {
             }
 
             serializer.start();
-            serializer.addSection("testbot-one", pairing);
+            serializer.addSection("testbot-four", pairing);
             serializer.addArray("hazards", "hazard", hazards);
-            try {
-                server.putOnQueue(serializer.finish());
-            } catch (InvalidDataException e) {
-                e.printStackTrace();
+            String toSend = serializer.finish();
+            if (toSend != null) {
+                server.putOnQueue(toSend);
             }
         } while (window.isVisible());
     }

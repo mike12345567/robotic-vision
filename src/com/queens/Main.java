@@ -8,7 +8,6 @@ import com.queens.entities.ColouredArea;
 import com.queens.entities.ObjectPairing;
 import com.queens.utilities.OutputFrame;
 import com.queens.utilities.Utilities;
-import com.sun.media.sound.InvalidDataException;
 import org.opencv.core.*;
 
 import java.awt.image.BufferedImage;
@@ -29,7 +28,7 @@ public class Main {
     public static void main(String[] args) {
 	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         openCV = new OpenCV();
-        frame = new OutputFrame();
+        frame = new OutputFrame(server);
 
         robots.add(new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
         robots.add(new ObjectPairing("testbot-two", ColourNames.OrangeAndRed, ColourNames.Blue));
@@ -59,7 +58,6 @@ public class Main {
             }
 
             openCV.process();
-            BufferedImage displayImage = frame.toBufferedImage(openCV.getDisplayImage());
 
             ArrayList<ColouredArea> toRemove = new ArrayList<ColouredArea>();
             for (int i = 0; i < openCV.getAreas().size(); i++) {
@@ -71,14 +69,15 @@ public class Main {
 
             for (ObjectPairing robot : robots) {
                 robot.checkForPairing(openCV.getAreas());
-                if (robot.isActive()) {
-                    displayImage = frame.addLabel(displayImage, robot.getPairingName(), robot.getX(), robot.getY());
-                }
             }
 
-            displayImage = handleHazards(displayImage);
+            handleHazards();
 
             sendData();
+
+            openCV.addColouredAreaOutputs();
+            BufferedImage displayImage = frame.toBufferedImage(openCV.getDisplayImage());
+            displayImage = drawImage(displayImage);
 
             if (displayImage != null) {
                 frame.show(displayImage);
@@ -87,32 +86,44 @@ public class Main {
         } while (currentlyRunning());
     }
 
-    private static BufferedImage handleHazards(BufferedImage toAddHazards) {
+    private static BufferedImage drawImage(BufferedImage toUpdate) {
+        int hazardCount = 1;
+
+        for (BorderedArea hazard : hazards) {
+            if (hazard.isActive()) {
+                String hazardName = Utilities.generateArrayElemName("hazard", hazardCount++);
+                toUpdate = frame.addLabel(toUpdate, hazardName, hazard.getX(), hazard.getY());
+            }
+        }
+        for (ObjectPairing robot : robots) {
+            if (robot.isActive()) {
+                toUpdate = frame.addLabel(toUpdate, robot.getPairingName(), robot.getX(), robot.getY());
+            }
+        }
+        return toUpdate;
+    }
+
+    private static void handleHazards() {
         /* update old hazards, remove those which are no longer valid */
         Iterator<BorderedArea> hazardIterator = hazards.iterator();
-        int count = 1;
 
         while (hazardIterator.hasNext()) {
             BorderedArea hazard = hazardIterator.next();
             hazard.update(openCV.getAreas());
             if (!hazard.isActive()) {
                 hazardIterator.remove();
-            } else {
-                String hazardName = Utilities.generateArrayElemName("hazard", count++);
-                toAddHazards = frame.addLabel(toAddHazards, hazardName, hazard.getX(), hazard.getY());
             }
         }
 
         /* generate new hazards if any are found */
         BorderedArea hazard;
         do {
-            hazard = new BorderedArea(false, ColourNames.White, ColourNames.OrangeAndRed);
+            hazard = new BorderedArea(ColourNames.Yellow, ColourNames.OrangeAndRed);
             hazard.update(openCV.getAreas());
             if (hazard.isActive()) {
                 hazards.add(hazard);
             }
         } while (hazard.isActive());
-        return toAddHazards;
     }
 
     private static void sendData() {
@@ -130,19 +141,18 @@ public class Main {
             }
 
         } else if (!disableServer) {
-            try {
-                serializer.start();
-                for (ObjectPairing robot : robots) {
-                    if (!robot.isActive()) continue;
-                    serializer.addSection(robot.getPairingName(), robot);
-                }
+            serializer.start();
+            for (ObjectPairing robot : robots) {
+                if (!robot.isActive()) continue;
+                serializer.addSection(robot.getPairingName(), robot);
+            }
 
-                if (hazards.size() > 0) {
-                    serializer.addArray("hazards", "hazard", hazards);
-                }
-                server.putOnQueue(serializer.finish());
-            } catch (InvalidDataException e) {
-                e.printStackTrace();
+            if (hazards.size() > 0) {
+                serializer.addArray("hazards", "hazard", hazards);
+            }
+            String toSend = serializer.finish();
+            if (toSend != null) {
+                server.putOnQueue(toSend);
             }
         }
     }

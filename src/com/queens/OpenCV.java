@@ -8,6 +8,7 @@ import com.queens.utilities.Utilities;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +17,8 @@ public class OpenCV {
     private final int thresholdSize = 10;
     private final int kSizeBlur = 3;
     private final int framesBetweenBrightnessCalcs = 30;
+    private final int captureWidth = 854;
+    private final int captureHeight = 480;
 
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
@@ -30,15 +33,15 @@ public class OpenCV {
 
     public OpenCV() {
         capture = new VideoCapture(0);
+        capture.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, captureWidth);
+        capture.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, captureHeight);
         if (!capture.isOpened()) {
             throw new NullPointerException("Camera could not be loaded");
-        }
+    }
         maskColours.add(new Colour(ColourNames.OrangeAndRed));
         maskColours.add(new Colour(ColourNames.Blue));
         maskColours.add(new Colour(ColourNames.Green));
         maskColours.add(new Colour(ColourNames.Yellow));
-        maskColours.add(new Colour(ColourNames.Orange));
-        maskColours.add(new Colour(ColourNames.White));
     }
 
     /**********************
@@ -54,16 +57,22 @@ public class OpenCV {
         }
 
         MatOperations.alterBrightness(cameraImage);
+        Imgproc.GaussianBlur(cameraImage, cameraImage, new Size(3, 3), 0);
         displayImage = new Mat();
         cameraImage.copyTo(displayImage);
         for (Colour colour : maskColours) {
             Mat mask = mask(cameraImage, colour);
             masks.put(colour.getName(), mask);
             findContours(mask, colour);
+        }
+        lastBrightnessCalculation++;
+    }
+
+    public void addColouredAreaOutputs() {
+        for (Colour colour : maskColours) {
             MatOperations.drawOutline(displayImage, areas, colour);
             MatOperations.drawPoint(displayImage, points, white);
         }
-        lastBrightnessCalculation++;
     }
 
     public void shutdown() {
@@ -122,6 +131,8 @@ public class OpenCV {
             }
         }
 
+        if (output == null) return null;
+
         Mat dilation = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.dilate(output, output, dilation);
 
@@ -165,6 +176,7 @@ public class OpenCV {
             }
             if (closest != null) {
                 area.updatePosition(closest);
+                area.setInUse(false);
                 contours.remove(indexContours);
                 count--;
             }

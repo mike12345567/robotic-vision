@@ -92,4 +92,9 @@ public class Utilities {
     public static String generateArrayElemName(String baseName, int number) {
         return baseName + number;
     }
+
+    public static boolean colouredAreaContainsOther(ColouredArea border, ColouredArea inside) {
+        return border.getBoundingBox().contains(inside.getTopCorner()) &&
+               border.getBoundingBox().contains(inside.getBottomCorner());
+    }
 }

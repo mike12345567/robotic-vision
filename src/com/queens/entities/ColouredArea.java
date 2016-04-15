@@ -14,7 +14,7 @@ public class ColouredArea {
     private ColourNames colour;
     private boolean needsUpdated = false;
     private boolean inUse = false;
-    private int framesSinceInUse = 0;
+    private int framesSinceInUse = maxFramesSinceUseForDraw; // start as not being drawn
 
     public ColouredArea(Rect boundingBox, ColourNames colour) {
         this.colour = colour;
@@ -115,6 +115,7 @@ public class ColouredArea {
     }
 
     public void setInUse(boolean inUse) {
+        if (!inUse) framesSinceInUse = maxFramesSinceUseForDraw;
         this.inUse = inUse;
     }
 

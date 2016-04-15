@@ -36,8 +36,8 @@ public class ObjectPairing implements Jsonifable {
         this.colourTwo = colourTwo;
         this.pairingName = pairingName;
 
-        frontArea = new BorderedArea(true, colourTwo, colourOne);
-        backArea = new BorderedArea(true, colourOne, colourTwo);
+        frontArea = new BorderedArea(colourTwo, colourOne);
+        backArea = new BorderedArea(colourOne, colourTwo);
     }
 
     private <T extends Comparable<T>> T medianList(LinkedList<T> list) {
