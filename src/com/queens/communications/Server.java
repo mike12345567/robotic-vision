@@ -1,6 +1,7 @@
 package com.queens.communications;
 
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.*;
@@ -140,7 +141,11 @@ public class Server implements Runnable {
     private void sendDataWebSocket(String data) {
         if (data != null) {
             System.out.println("Websocket sent: " + data);
-            client.send(data);
+            try {
+                client.send(data);
+            } catch (WebsocketNotConnectedException e) {
+                webSocketConnected = false;
+            }
         }
     }
 

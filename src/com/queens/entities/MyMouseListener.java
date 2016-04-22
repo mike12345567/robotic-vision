@@ -13,7 +13,7 @@ import java.awt.event.MouseListener;
 
 public class MyMouseListener implements MouseListener {
     private static final String locationEndpoint = "moveToTarget";
-    private static final String robot = "testbot-one";
+    private static final String robot = "testbot-four";
     Server server;
 
     public MyMouseListener(Server server) {

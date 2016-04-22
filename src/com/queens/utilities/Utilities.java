@@ -8,6 +8,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,5 +97,9 @@ public class Utilities {
     public static boolean colouredAreaContainsOther(ColouredArea border, ColouredArea inside) {
         return border.getBoundingBox().contains(inside.getTopCorner()) &&
                border.getBoundingBox().contains(inside.getBottomCorner());
+    }
+
+    public static int getNewX(JComponent component) {
+        return component.getX() + component.getWidth() + 10;
     }
 }

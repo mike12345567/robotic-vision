@@ -95,7 +95,7 @@ public class ColouredArea {
         if (!isInUse()) {
             framesSinceInUse++;
         } else {
-            framesSinceInUse = 0;
+            framesSinceInUse--;
         }
         return framesSinceInUse < maxFramesSinceUseForDraw;
     }

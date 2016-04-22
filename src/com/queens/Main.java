@@ -6,6 +6,7 @@ import com.queens.communications.Server;
 import com.queens.entities.BorderedArea;
 import com.queens.entities.ColouredArea;
 import com.queens.entities.ObjectPairing;
+import com.queens.utilities.MatOperations;
 import com.queens.utilities.OutputFrame;
 import com.queens.utilities.Utilities;
 import org.opencv.core.*;
@@ -155,5 +156,11 @@ public class Main {
                 server.putOnQueue(toSend);
             }
         }
+    }
+
+    public static void lightingChanged() {
+        MatOperations.alphaFactor = MatOperations.defaultFactor;
+        MatOperations.betaFactor = MatOperations.defaultFactor;
+        frame.resetBrightnessLabels();
     }
 }

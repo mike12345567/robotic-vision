@@ -17,8 +17,9 @@ public class OpenCV {
     private final int thresholdSize = 10;
     private final int kSizeBlur = 3;
     private final int framesBetweenBrightnessCalcs = 30;
-    private final int captureWidth = 1280;
-    private final int captureHeight = 720;
+    private final int maxPossibleContours = 200;
+    private final int captureWidth = 854;
+    private final int captureHeight = 480;
 
     private VideoCapture capture;
     private ArrayList<ColouredArea> areas = new ArrayList<ColouredArea>();
@@ -32,12 +33,14 @@ public class OpenCV {
     private Colour white = new Colour(ColourNames.White);
 
     public OpenCV() {
-        capture = new VideoCapture(1);
+        // deal with a default webcam
+        int cameraCode = 1;
+        if (!addCamera(cameraCode)) {
+            throw new NullPointerException("Camera could not be loaded");
+        }
         capture.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, captureWidth);
         capture.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, captureHeight);
-        if (!capture.isOpened()) {
-            throw new NullPointerException("Camera could not be loaded");
-    }
+
         maskColours.add(new Colour(ColourNames.OrangeAndRed));
         maskColours.add(new Colour(ColourNames.Blue));
         maskColours.add(new Colour(ColourNames.Green));
@@ -50,13 +53,15 @@ public class OpenCV {
     public void process() {
         lastImage = cameraImage;
         cameraImage = new Mat();
+        Mat toTest = new Mat();
         capture.read(cameraImage);
+        cameraImage.copyTo(toTest);
         if (lastBrightnessCalculation >= framesBetweenBrightnessCalcs) {
             lastBrightnessCalculation = 0;
-            MatOperations.setBrightnessModeForColours(cameraImage, maskColours);
+            MatOperations.setBrightnessModeForColours(toTest, maskColours);
         }
 
-        MatOperations.alterBrightness(cameraImage);
+        cameraImage = MatOperations.alterBrightness(cameraImage);
         Imgproc.GaussianBlur(cameraImage, cameraImage, new Size(3, 3), 0);
         displayImage = new Mat();
         cameraImage.copyTo(displayImage);
@@ -66,6 +71,19 @@ public class OpenCV {
             findContours(mask, colour);
         }
         lastBrightnessCalculation++;
+    }
+
+    private boolean addCamera(int cameraCode) {
+        capture = new VideoCapture(cameraCode);
+        if (!capture.isOpened()) {
+            if (cameraCode != 0) {
+                return addCamera(--cameraCode);
+            } else {
+                return false;
+            }
+        } else {
+            return true;
+        }
     }
 
     public void addColouredAreaOutputs() {
@@ -150,6 +168,13 @@ public class OpenCV {
         Imgproc.findContours(src.clone(), contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_NONE);
 
         int count = contours.size();
+
+        // brightness must have changed
+        if (contours.size() > maxPossibleContours) {
+            lastBrightnessCalculation = framesBetweenBrightnessCalcs;
+            Main.lightingChanged();
+            return;
+        }
 
         for (ColouredArea area : areas) {
             if (colour.getName() != area.getColour()) {

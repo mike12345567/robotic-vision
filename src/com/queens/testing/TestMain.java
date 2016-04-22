@@ -43,7 +43,7 @@ public class TestMain {
             }
 
             serializer.start();
-            serializer.addSection("testbot-four", pairing);
+            serializer.addSection("testbot-one", pairing);
             serializer.addArray("hazards", "hazard", hazards);
             String toSend = serializer.finish();
             if (toSend != null) {
