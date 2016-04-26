@@ -4,6 +4,6 @@ import com.queens.communications.KeyValueObject;
 
 import java.util.List;
 
-public interface Jsonifable {
+public interface IJsonifable {
     public List<KeyValueObject> getKeyValuePairs();
 }

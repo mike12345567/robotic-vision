@@ -1,12 +1,12 @@
 package com.queens.testing;
 
-import com.queens.communications.Jsonifable;
+import com.queens.communications.IJsonifable;
 import com.queens.communications.KeyValueObject;
 import com.queens.utilities.Utilities;
 
 import java.util.List;
 
-public class TestHazard implements Jsonifable {
+public class TestHazard implements IJsonifable {
     int xLocation, yLocation, width, height;
 
     public void update(int xLocation, int yLocation, int width, int height) {

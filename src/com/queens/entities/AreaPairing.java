@@ -2,7 +2,7 @@ package com.queens.entities;
 
 import com.queens.utilities.Utilities;
 import com.queens.colours.ColourNames;
-import com.queens.communications.Jsonifable;
+import com.queens.communications.IJsonifable;
 import com.queens.communications.KeyValueObject;
 import org.opencv.core.Point;
 
@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ObjectPairing implements Jsonifable {
+public class AreaPairing implements IJsonifable {
     static private final int queueLength = 3;
     static private final int msToSeconds = 1000;
 
@@ -31,7 +31,7 @@ public class ObjectPairing implements Jsonifable {
     int cyclesSinceTimeUpdate = 0;
     float currentRotationSpeed = 0;
 
-    public ObjectPairing(String pairingName, ColourNames colourOne, ColourNames colourTwo) {
+    public AreaPairing(String pairingName, ColourNames colourOne, ColourNames colourTwo) {
         this.colourOne = colourOne;
         this.colourTwo = colourTwo;
         this.pairingName = pairingName;

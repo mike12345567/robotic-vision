@@ -1,14 +1,14 @@
 package com.queens.entities;
 
 import com.queens.colours.ColourNames;
-import com.queens.communications.Jsonifable;
+import com.queens.communications.IJsonifable;
 import com.queens.communications.KeyValueObject;
 import com.queens.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BorderedArea implements Jsonifable {
+public class BorderedArea implements IJsonifable {
     ColourNames insideColour, borderColour;
     ColouredArea borderArea;
     ColouredArea insideArea;

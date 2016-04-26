@@ -14,7 +14,7 @@ public class Server implements Runnable {
     private static final int portAjax = 3000;
     private static final int portWS = 4201;
     private static String hostname = "localhost";
-    private static String baseUrl = "http://"+hostname+":"+Integer.toString(portAjax)+"/";
+    private static String baseUrl = "http://"+hostname+":"+Integer.toString(portAjax)+"/api/v1/";
     private static String url = baseUrl + "devices/locationData";
     private static String wsUrl = "ws://"+hostname+":"+Integer.toString(portWS);
     private static final String userAgent = "Mozilla/5.0";

@@ -20,10 +20,10 @@ public class JsonSerializer {
         builder = null;
     }
 
-    public <T extends Jsonifable> void addArray(String arrayKey, String baseObjKey, ArrayList<T> objects) {
+    public <T extends IJsonifable> void addArray(String arrayKey, String baseObjKey, ArrayList<T> objects) {
         JsonArrayBuilder arrayBuilder = factory.createArrayBuilder();
         int count = 1;
-        for (Jsonifable object : objects) {
+        for (IJsonifable object : objects) {
             JsonObjectBuilder objBuilder = factory.createObjectBuilder();
             String key = Utilities.generateArrayElemName(baseObjKey, count++);
             convertKeyValuePair(objBuilder, new KeyValueObject(key, object.getKeyValuePairs()));
@@ -35,7 +35,7 @@ public class JsonSerializer {
         builder.add(arrayKey, arrayBuilder.build());
     }
 
-    public void addSection(String key, Jsonifable object) {
+    public void addSection(String key, IJsonifable object) {
         List<KeyValueObject> keyValuePairs = object.getKeyValuePairs();
         if (keyValuePairs == null) {
             return;

@@ -5,7 +5,7 @@ import com.queens.communications.JsonSerializer;
 import com.queens.communications.Server;
 import com.queens.entities.BorderedArea;
 import com.queens.entities.ColouredArea;
-import com.queens.entities.ObjectPairing;
+import com.queens.entities.AreaPairing;
 import com.queens.utilities.MatOperations;
 import com.queens.utilities.OutputFrame;
 import com.queens.utilities.Utilities;
@@ -21,7 +21,7 @@ public class Main {
 
     private static Server server = new Server();
     private static JsonSerializer serializer = new JsonSerializer();
-    private static ArrayList<ObjectPairing> robots = new ArrayList<ObjectPairing>();
+    private static ArrayList<AreaPairing> robots = new ArrayList<AreaPairing>();
     private static ArrayList<BorderedArea> hazards = new ArrayList<BorderedArea>();
     private static OpenCV openCV;
     private static OutputFrame frame;
@@ -31,10 +31,10 @@ public class Main {
         openCV = new OpenCV();
         frame = new OutputFrame(server);
 
-        robots.add(new ObjectPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
-        robots.add(new ObjectPairing("testbot-two", ColourNames.OrangeAndRed, ColourNames.Blue));
-        robots.add(new ObjectPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
-        robots.add(new ObjectPairing("testbot-four", ColourNames.Yellow, ColourNames.Green));
+        robots.add(new AreaPairing("testbot-one", ColourNames.Green, ColourNames.OrangeAndRed));
+        robots.add(new AreaPairing("testbot-two", ColourNames.OrangeAndRed, ColourNames.Blue));
+        robots.add(new AreaPairing("testbot-three", ColourNames.Blue, ColourNames.Yellow));
+        robots.add(new AreaPairing("testbot-four", ColourNames.Yellow, ColourNames.Green));
 
         loop();
     }
@@ -68,7 +68,7 @@ public class Main {
             }
             openCV.getAreas().removeAll(toRemove);
 
-            for (ObjectPairing robot : robots) {
+            for (AreaPairing robot : robots) {
                 robot.checkForPairing(openCV.getAreas());
             }
 
@@ -96,7 +96,7 @@ public class Main {
                 toUpdate = frame.addLabel(toUpdate, hazardName, hazard.getX(), hazard.getY());
             }
         }
-        for (ObjectPairing robot : robots) {
+        for (AreaPairing robot : robots) {
             if (robot.isActive()) {
                 toUpdate = frame.addLabel(toUpdate, robot.getPairingName(), robot.getX(), robot.getY());
             }
@@ -133,7 +133,7 @@ public class Main {
         }
 
         if (disableServer && outputEnabled) {
-            for (ObjectPairing robot : robots) {
+            for (AreaPairing robot : robots) {
                 if (!robot.isActive()) continue;
                 float rotation = robot.getRotation();
                 int x = robot.getX();
@@ -143,7 +143,7 @@ public class Main {
 
         } else if (!disableServer) {
             serializer.start();
-            for (ObjectPairing robot : robots) {
+            for (AreaPairing robot : robots) {
                 if (!robot.isActive()) continue;
                 serializer.addSection(robot.getPairingName(), robot);
             }

@@ -1,12 +1,12 @@
 package com.queens.testing;
 
-import com.queens.communications.Jsonifable;
+import com.queens.communications.IJsonifable;
 import com.queens.communications.KeyValueObject;
 import com.queens.utilities.Utilities;
 
 import java.util.List;
 
-public class TestPairing implements Jsonifable {
+public class TestPairing implements IJsonifable {
     private float rotation = 0.0f;
     private int xLocation = 0;
     private int yLocation = 0;

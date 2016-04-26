@@ -1,12 +1,12 @@
 package com.queens.entities;
 
-import com.queens.communications.Jsonifable;
+import com.queens.communications.IJsonifable;
 import com.queens.communications.KeyValueObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Coordinates implements Jsonifable {
+public class Coordinates implements IJsonifable {
     private int x, y;
 
     public Coordinates(int x, int y) {
