@@ -123,25 +123,6 @@ public class ColouredArea {
         return inUse;
     }
 
-    public void merge(Rect rect) {
-        double tlx, tly, brx, bry, difference;
-        tlx = boundingBox.tl().x > rect.tl().x ? rect.tl().x : boundingBox.tl().x;
-        tly = boundingBox.tl().y > rect.tl().y ? rect.tl().y : boundingBox.tl().y;
-        brx = boundingBox.br().x < rect.br().x ? rect.br().x : boundingBox.br().x;
-        bry = boundingBox.br().y < rect.br().y ? rect.br().y : boundingBox.br().y;
-
-        double[] vals = new double[4];
-        vals[0] = tlx;
-        vals[1] = tly;
-        difference = tlx - brx;
-        if (difference < 0) difference *= -1;
-        vals[2] = difference;
-        difference = tly - bry;
-        if (difference < 0) difference *= -1;
-        vals[3] = difference;
-        boundingBox.set(vals);
-    }
-
     public void updatePosition(Rect newPosition) {
         this.boundingBox = newPosition;
         needsUpdated = false;
