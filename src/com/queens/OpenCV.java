@@ -56,6 +56,7 @@ public class OpenCV {
         Mat toTest = new Mat();
         capture.read(cameraImage);
         cameraImage.copyTo(toTest);
+
         if (lastBrightnessCalculation >= framesBetweenBrightnessCalcs) {
             lastBrightnessCalculation = 0;
             MatOperations.setBrightnessModeForColours(toTest, maskColours);

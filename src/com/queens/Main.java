@@ -158,6 +158,15 @@ public class Main {
         }
     }
 
+    public static String getActiveRobot() {
+        for (AreaPairing robot : robots) {
+            if (robot.isActive()) {
+                return robot.getPairingName();
+            }
+        }
+        return null;
+    }
+
     public static void lightingChanged() {
         MatOperations.alphaFactor = MatOperations.defaultFactor;
         MatOperations.betaFactor = MatOperations.defaultFactor;

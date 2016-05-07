@@ -13,7 +13,6 @@ import java.awt.event.MouseListener;
 
 public class MyMouseListener implements MouseListener {
     private static final String locationEndpoint = "moveToTarget";
-    private static final String robot = "testbot-four";
     Server server;
 
     public MyMouseListener(Server server) {
@@ -38,7 +37,7 @@ public class MyMouseListener implements MouseListener {
         Coordinates coords = new Coordinates(x, y);
         JsonSerializer serializer = new JsonSerializer();
         serializer.addSection("coordinates", coords);
-        serializer.addSingleData("deviceName", robot);
+        serializer.addSingleData("deviceName", Main.getActiveRobot());
         server.sendPost(serializer.finish(), locationEndpoint);
         System.out.println();
     }
